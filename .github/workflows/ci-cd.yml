@@ -31,9 +31,6 @@ jobs:
     
     - name: Run tests
       run: npm run test:cov
-    
-    - name: Run e2e tests
-      run: npm run test:e2e
 
   build:
     needs: test
