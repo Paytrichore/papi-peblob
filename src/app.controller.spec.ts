@@ -15,8 +15,16 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return welcome message', () => {
+      expect(appController.getHello()).toBe('Bienvenue sur l\'API Papi Peblob! 🚀');
+    });
+  });
+
+  describe('health', () => {
+    it('should return health status', () => {
+      const result = appController.getHealth();
+      expect(result.status).toBe('ok');
+      expect(result.timestamp).toBeDefined();
     });
   });
 });

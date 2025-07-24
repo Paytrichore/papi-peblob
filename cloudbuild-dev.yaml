@@ -1,0 +1,27 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--platform=linux/amd64',
+      '-t', 'gcr.io/$PROJECT_ID/papi-peblob-dev:$COMMIT_SHA',
+      '.'
+    ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'push',
+      'gcr.io/$PROJECT_ID/papi-peblob-dev:$COMMIT_SHA'
+    ]
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run', 'deploy', 'papi-peblob-dev',
+        '--image', 'gcr.io/$PROJECT_ID/papi-peblob-dev:$COMMIT_SHA',
+        '--region', 'us-central1',
+        '--platform', 'managed',
+        '--allow-unauthenticated'
+      ]
+images:
+  - 'gcr.io/$PROJECT_ID/papi-peblob-dev:$COMMIT_SHA'
+options:
+  logging: CLOUD_LOGGING_ONLY

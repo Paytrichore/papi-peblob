@@ -1,25 +1,142 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🚀 Papi Peblob API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Une API moderne développée avec NestJS pour la gestion des Peblobs. Cette API suit les principes des microservices et offre une architecture scalable pour la communication entre services.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## ✨ Fonctionnalités
+
+- 🏗️ Architecture microservices avec NestJS 11
+- 📚 Documentation automatique avec Swagger
+- ✅ Validation des données avec class-validator
+- 🧪 Tests unitaires et d'intégration
+- 🐳 Prêt pour Docker
+- 🔄 CI/CD avec GitHub Actions
+- 🌐 CORS configuré pour les appels inter-services
+
+## 🛠️ Technologies
+
+- **Framework**: NestJS 11.0.1
+- **Runtime**: Node.js 20+
+- **Validation**: class-validator & class-transformer
+- **Documentation**: Swagger/OpenAPI
+- **Tests**: Jest
+- **Conteneurisation**: Docker
+
+## 🚦 Démarrage rapide
+
+### Prérequis
+- Node.js 18+ ou 20+
+- npm ou yarn
+
+### Installation
+
+```bash
+# Cloner le projet
+git clone <your-repo-url>
+cd papi-peblob
+
+# Installer les dépendances
+npm install
+
+# Copier le fichier d'environnement
+cp .env.example .env
+
+# Démarrer en mode développement
+npm run start:dev
+```
+
+L'API sera disponible sur `http://localhost:3000`
+
+## 📖 Documentation
+
+Une fois l'application démarrée, la documentation Swagger est accessible sur :
+- **Documentation**: http://localhost:3000/api
+- **Health Check**: http://localhost:3000/health
+
+## 🧪 Tests
+
+```bash
+# Tests unitaires
+npm run test
+
+# Tests avec couverture
+npm run test:cov
+
+# Tests e2e
+npm run test:e2e
+
+# Tests en mode watch
+npm run test:watch
+```
+
+## 🐳 Docker
+
+```bash
+# Build de l'image
+docker build -t papi-peblob .
+
+# Lancement du conteneur
+docker run -p 3000:3000 papi-peblob
+```
+
+## 📋 API Endpoints
+
+### Peblobs
+- `GET /peblobs` - Liste tous les peblobs
+- `GET /peblobs/:id` - Récupère un peblob par ID
+- `POST /peblobs` - Crée un nouveau peblob
+- `PATCH /peblobs/:id` - Met à jour un peblob
+- `DELETE /peblobs/:id` - Supprime un peblob
+- `GET /peblobs/stats` - Statistiques des peblobs
+
+### Système
+- `GET /` - Message de bienvenue
+- `GET /health` - Vérification de santé
+
+## 🏗️ Architecture
+
+```
+src/
+├── app.module.ts          # Module principal
+├── main.ts               # Point d'entrée
+├── peblob/              # Module Peblob
+│   ├── dto/             # Data Transfer Objects
+│   ├── entities/        # Entités
+│   ├── peblob.controller.ts
+│   ├── peblob.service.ts
+│   └── peblob.module.ts
+└── test/                # Tests e2e
+```
+
+## 🚀 Déploiement
+
+Le projet inclut une configuration GitHub Actions pour le CI/CD automatique. Push sur la branche `main` déclenche :
+
+1. ✅ Tests automatiques
+2. 🔍 Linting
+3. 🏗️ Build de l'application
+4. 🐳 Construction de l'image Docker
+
+## 🤝 Contribution
+
+1. Fork le projet
+2. Crée une branche feature (`git checkout -b feature/amazing-feature`)
+3. Commit tes changements (`git commit -m 'Add amazing feature'`)
+4. Push sur la branche (`git push origin feature/amazing-feature`)
+5. Ouvre une Pull Request
+
+## 📄 Licence
+
+Ce projet est sous licence UNLICENSED - voir le fichier package.json pour plus de détails.
+
+## 🔗 Liens utiles
+
+- [Documentation NestJS](https://nestjs.com/)
+- [Documentation Swagger](https://swagger.io/)
+- [Docker](https://www.docker.com/)
+
+---
+
+💡 **Note**: Cette API est conçue pour fonctionner dans un écosystème de microservices. Elle peut communiquer avec d'autres APIs via HTTP ou message queues selon tes besoins.
 
 ## Description
 
