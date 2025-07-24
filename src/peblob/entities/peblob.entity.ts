@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PeblobStatus } from '../dto/update-peblob.dto';
 import { PtiblobEntity } from './ptiblob.entity';
 
 export class PeblobEntity {
@@ -8,12 +7,6 @@ export class PeblobEntity {
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   id: string;
-
-  @ApiProperty({
-    description: 'Nom du peblob',
-    example: 'Mon Premier Peblob',
-  })
-  name: string;
 
   @ApiProperty({
     description:
@@ -62,13 +55,6 @@ export class PeblobEntity {
     example: 3,
   })
   size: number;
-
-  @ApiProperty({
-    description: 'Statut du peblob',
-    example: 'active',
-    enum: PeblobStatus,
-  })
-  status: PeblobStatus;
 
   @ApiProperty({
     description: 'Date de création',
@@ -123,25 +109,6 @@ export class PeblobEntity {
     this.structure[row][col] = ptiblob;
     this.updatedAt = new Date();
     return true;
-  }
-
-  /**
-   * Calcule la luminosité moyenne du Peblob
-   */
-  getAverageBrightness(): number {
-    if (!this.structure) return 0;
-
-    let totalBrightness = 0;
-    let count = 0;
-
-    for (const row of this.structure) {
-      for (const ptiblob of row) {
-        totalBrightness += ptiblob.getBrightness();
-        count++;
-      }
-    }
-
-    return count > 0 ? totalBrightness / count : 0;
   }
 
   /**
