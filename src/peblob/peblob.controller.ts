@@ -43,7 +43,7 @@ export class PeblobController {
     status: 400,
     description: 'Structure invalide (doit être carrée)',
   })
-  create(@Body() createPeblobDto: CreatePeblobDto): PeblobEntity {
+  create(@Body() createPeblobDto: CreatePeblobDto) {
     return this.peblobService.create(createPeblobDto);
   }
 
@@ -67,10 +67,10 @@ export class PeblobController {
     description: 'Le peblob aléatoire a été créé avec succès',
     type: PeblobEntity,
   })
-  createRandom(
+  async createRandom(
     @Query('name') name: string,
     @Query('size', new ParseIntPipe({ optional: true })) size?: number,
-  ): PeblobEntity {
+  ) {
     return this.peblobService.createRandom(name, size);
   }
 
@@ -81,7 +81,7 @@ export class PeblobController {
     description: 'Liste de tous les peblobs',
     type: [PeblobEntity],
   })
-  findAll(): PeblobEntity[] {
+  findAll() {
     return this.peblobService.findAll();
   }
 
@@ -142,7 +142,7 @@ export class PeblobController {
     type: PeblobEntity,
   })
   @ApiResponse({ status: 404, description: 'Peblob non trouvé' })
-  findOne(@Param('id') id: string): PeblobEntity {
+  findOne(@Param('id') id: string) {
     return this.peblobService.findOne(id);
   }
 
@@ -181,10 +181,10 @@ export class PeblobController {
   })
   @ApiResponse({ status: 404, description: 'Peblob non trouvé' })
   @ApiResponse({ status: 400, description: 'Structure invalide' })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updatePeblobDto: UpdatePeblobDto,
-  ): PeblobEntity {
+  ) {
     return this.peblobService.update(id, updatePeblobDto);
   }
 
@@ -235,7 +235,7 @@ export class PeblobController {
   @ApiParam({ name: 'id', description: 'ID du peblob' })
   @ApiResponse({ status: 204, description: 'Peblob supprimé avec succès' })
   @ApiResponse({ status: 404, description: 'Peblob non trouvé' })
-  remove(@Param('id') id: string): void {
+  async remove(@Param('id') id: string) {
     return this.peblobService.remove(id);
   }
 
