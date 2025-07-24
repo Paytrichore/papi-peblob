@@ -21,7 +21,6 @@ import {
   ApiExtraModels,
 } from '@nestjs/swagger';
 import { PeblobService } from './peblob.service';
-import { CreatePeblobDto } from './dto/create-peblob.dto';
 import { UpdatePeblobDto } from './dto/update-peblob.dto';
 import { PeblobEntity } from './entities/peblob.entity';
 import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
@@ -36,11 +35,14 @@ export class PeblobController {
 
   @Post()
   @ApiOperation({
-    summary: 'Créer un peblob pour un utilisateur donné avec une structure carrée de ptiblobs',
+    summary:
+      'Créer un peblob pour un utilisateur donné avec une structure carrée de ptiblobs',
   })
   @ApiBody({ type: CreatePeblobForUserDto })
   @ApiResponse({ status: 201, description: 'Peblob créé', type: PeblobEntity })
-  async create(@Body() createPeblobForUserDto: CreatePeblobForUserDto): Promise<Peblob> {
+  async create(
+    @Body() createPeblobForUserDto: CreatePeblobForUserDto,
+  ): Promise<Peblob> {
     return this.peblobService.create(createPeblobForUserDto);
   }
 

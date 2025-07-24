@@ -3,12 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { CreatePeblobDto } from './dto/create-peblob.dto';
 import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
-import { UpdatePeblobDto, PeblobStatus } from './dto/update-peblob.dto';
+import { UpdatePeblobDto } from './dto/update-peblob.dto';
 import { PeblobEntity } from './entities/peblob.entity';
 import { PtiblobEntity } from './entities/ptiblob.entity';
-import { v4 as uuidv4 } from 'uuid';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Peblob, PeblobDocument } from './schemas/peblob.schema';
@@ -22,7 +20,9 @@ export class PeblobService {
     private readonly peblobModel: Model<PeblobDocument>,
   ) {}
 
-  async create(CreatePeblobForUserDto: CreatePeblobForUserDto): Promise<Peblob> {
+  async create(
+    CreatePeblobForUserDto: CreatePeblobForUserDto,
+  ): Promise<Peblob> {
     if (!CreatePeblobForUserDto.structure) {
       throw new BadRequestException('Le champ structure est obligatoire');
     }

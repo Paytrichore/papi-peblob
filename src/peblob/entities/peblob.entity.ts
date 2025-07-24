@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PeblobStatus } from '../dto/update-peblob.dto';
 import { PtiblobEntity } from './ptiblob.entity';
 
 export class PeblobEntity {
