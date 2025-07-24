@@ -19,8 +19,7 @@ steps:
         '--image', 'gcr.io/$PROJECT_ID/papi-peblob:$COMMIT_SHA',
         '--region', 'us-central1',
         '--platform', 'managed',
-        '--allow-unauthenticated',
-        '--set-env-vars', 'NODE_ENV=production,USER_API_URL=https://papi-user-812288085862.us-central1.run.app/'
+        '--allow-unauthenticated'
       ]
   # Afficher l'URL du service déployé
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
