@@ -33,7 +33,6 @@ steps:
         echo "📚 URL de l'API: $$SERVICE_URL"
         echo "📖 Documentation Swagger: $$SERVICE_URL/api"
         echo "💚 Health check: $$SERVICE_URL/health"
-      ]
 images:
   - 'gcr.io/$PROJECT_ID/papi-peblob-dev:$COMMIT_SHA'
 options:
