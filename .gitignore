@@ -3,6 +3,11 @@
 /node_modules
 /build
 
+# Environment variables
+.env
+.env.production
+# Keep .env.example for documentation
+
 # Logs
 logs
 *.log
