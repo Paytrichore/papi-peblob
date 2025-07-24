@@ -20,7 +20,6 @@ steps:
         '--region', 'us-central1',
         '--platform', 'managed',
         '--allow-unauthenticated',
-        '--set-env-vars', 'NODE_ENV=development,USER_API_URL=https://papi-user-dev-812288085862.us-central1.run.app/'
       ]
   # Afficher l'URL du service déployé
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'

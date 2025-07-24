@@ -5,10 +5,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
-  // Debug: log partiel de l'URL MongoDB (jamais le mot de passe complet)
-  const dbUrl = process.env.DB_URL || '';
-  const safeDbUrl = dbUrl.replace(/(mongodb\+srv:\/\/.*:)[^@]+(@)/, '$1***$2');
-  console.log('🔎 DB_URL utilisé pour Mongoose :', safeDbUrl);
   const app = await NestFactory.create(AppModule);
 
   app.use(bodyParser.urlencoded({ extended: true }));
