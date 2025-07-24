@@ -8,24 +8,29 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(bodyParser.urlencoded({ extended: true }));
-  
+
   // Configuration globale de la validation
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
-  
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
   // Configuration CORS
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string,
+      callback: (arg0: Error | null, arg1?: boolean) => void,
+    ) => {
       // Autorise localhost, tous les sous-domaines de dev et le domaine prod
       const allowedOrigins = [
         /^http:\/\/localhost:\d+$/,
         /^https:\/\/petricator(-dev)?-\d+\.us-central1\.run\.app$/,
-        /^https:\/\/[a-zA-Z0-9-]+-812288085862\.us-central1\.run\.app$/
+        /^https:\/\/[a-zA-Z0-9-]+-812288085862\.us-central1\.run\.app$/,
       ];
-      if (!origin || allowedOrigins.some(regex => regex.test(origin))) {
+      if (!origin || allowedOrigins.some((regex) => regex.test(origin))) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -35,7 +40,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
-  
+
   // Configuration Swagger
   const config = new DocumentBuilder()
     .setTitle('Papi Peblob API')
@@ -45,10 +50,16 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
-  
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`🚀 Application démarrée sur http://localhost:${port}`);
-  console.log(`📚 Documentation Swagger disponible sur http://localhost:${port}/api`);
+  console.log(
+    `📚 Documentation Swagger disponible sur http://localhost:${port}/api`,
+  );
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+  console.error("❌ Erreur lors du démarrage de l'application:", error);
+  process.exit(1);
+});

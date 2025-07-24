@@ -30,7 +30,9 @@ export class PeblobController {
   constructor(private readonly peblobService: PeblobService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Créer un nouveau peblob avec une structure carrée de ptiblobs' })
+  @ApiOperation({
+    summary: 'Créer un nouveau peblob avec une structure carrée de ptiblobs',
+  })
   @ApiBody({ type: CreatePeblobDto })
   @ApiResponse({
     status: 201,
@@ -46,7 +48,9 @@ export class PeblobController {
   }
 
   @Post('random')
-  @ApiOperation({ summary: 'Créer un peblob aléatoire avec une taille spécifiée' })
+  @ApiOperation({
+    summary: 'Créer un peblob aléatoire avec une taille spécifiée',
+  })
   @ApiQuery({
     name: 'name',
     description: 'Nom du peblob',
@@ -143,7 +147,7 @@ export class PeblobController {
   }
 
   @Get(':id/dominant-color')
-  @ApiOperation({ summary: 'Récupérer la couleur dominante d\'un peblob' })
+  @ApiOperation({ summary: "Récupérer la couleur dominante d'un peblob" })
   @ApiParam({ name: 'id', description: 'ID du peblob' })
   @ApiResponse({
     status: 200,
@@ -153,12 +157,16 @@ export class PeblobController {
       properties: {
         r: { type: 'number', example: 128 },
         g: { type: 'number', example: 64 },
-        b: { type: 'number', example: 32 }
-      }
-    }
+        b: { type: 'number', example: 32 },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Peblob non trouvé' })
-  getDominantColor(@Param('id') id: string): { r: number; g: number; b: number } {
+  getDominantColor(@Param('id') id: string): {
+    r: number;
+    g: number;
+    b: number;
+  } {
     return this.peblobService.getDominantColor(id);
   }
 
@@ -181,7 +189,9 @@ export class PeblobController {
   }
 
   @Patch(':id/ptiblob/:row/:col')
-  @ApiOperation({ summary: 'Mettre à jour un ptiblob spécifique dans un peblob' })
+  @ApiOperation({
+    summary: 'Mettre à jour un ptiblob spécifique dans un peblob',
+  })
   @ApiParam({ name: 'id', description: 'ID du peblob' })
   @ApiParam({ name: 'row', description: 'Ligne du ptiblob (commence à 0)' })
   @ApiParam({ name: 'col', description: 'Colonne du ptiblob (commence à 0)' })
@@ -191,10 +201,10 @@ export class PeblobController {
       properties: {
         r: { type: 'number', minimum: 0, maximum: 255, example: 255 },
         g: { type: 'number', minimum: 0, maximum: 255, example: 128 },
-        b: { type: 'number', minimum: 0, maximum: 255, example: 64 }
+        b: { type: 'number', minimum: 0, maximum: 255, example: 64 },
       },
-      required: ['r', 'g', 'b']
-    }
+      required: ['r', 'g', 'b'],
+    },
   })
   @ApiResponse({
     status: 200,
@@ -209,7 +219,14 @@ export class PeblobController {
     @Param('col', ParseIntPipe) col: number,
     @Body() ptiblob: { r: number; g: number; b: number },
   ): PeblobEntity {
-    return this.peblobService.updatePtiblob(id, row, col, ptiblob.r, ptiblob.g, ptiblob.b);
+    return this.peblobService.updatePtiblob(
+      id,
+      row,
+      col,
+      ptiblob.r,
+      ptiblob.g,
+      ptiblob.b,
+    );
   }
 
   @Delete(':id')
@@ -225,11 +242,11 @@ export class PeblobController {
   // 👥 ENDPOINTS POUR LA GESTION DES UTILISATEURS
 
   @Get('user/:userId')
-  @ApiOperation({ summary: 'Récupérer tous les peblobs d\'un utilisateur' })
-  @ApiParam({ name: 'userId', description: 'ID de l\'utilisateur' })
+  @ApiOperation({ summary: "Récupérer tous les peblobs d'un utilisateur" })
+  @ApiParam({ name: 'userId', description: "ID de l'utilisateur" })
   @ApiResponse({
     status: 200,
-    description: 'Liste des peblobs de l\'utilisateur',
+    description: "Liste des peblobs de l'utilisateur",
     type: [PeblobEntity],
   })
   findByUserId(@Param('userId') userId: string): PeblobEntity[] {
@@ -237,11 +254,11 @@ export class PeblobController {
   }
 
   @Get('user/:userId/stats')
-  @ApiOperation({ summary: 'Récupérer les statistiques d\'un utilisateur' })
-  @ApiParam({ name: 'userId', description: 'ID de l\'utilisateur' })
+  @ApiOperation({ summary: "Récupérer les statistiques d'un utilisateur" })
+  @ApiParam({ name: 'userId', description: "ID de l'utilisateur" })
   @ApiResponse({
     status: 200,
-    description: 'Statistiques de l\'utilisateur',
+    description: "Statistiques de l'utilisateur",
     schema: {
       type: 'object',
       properties: {
@@ -250,9 +267,9 @@ export class PeblobController {
         inactive: { type: 'number', example: 1 },
         archived: { type: 'number', example: 1 },
         averageSize: { type: 'number', example: 12 },
-        totalPixels: { type: 'number', example: 150 }
-      }
-    }
+        totalPixels: { type: 'number', example: 150 },
+      },
+    },
   })
   getUserStats(@Param('userId') userId: string) {
     return this.peblobService.getUserStats(userId);
@@ -276,7 +293,9 @@ export class PeblobController {
   }
 
   @Get('public')
-  @ApiOperation({ summary: 'Récupérer les peblobs publics (sans propriétaire)' })
+  @ApiOperation({
+    summary: 'Récupérer les peblobs publics (sans propriétaire)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Liste des peblobs publics',
@@ -288,20 +307,21 @@ export class PeblobController {
 
   @Delete('user/:userId/all')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
-    summary: 'Supprimer tous les peblobs d\'un utilisateur',
-    description: 'Utile pour la conformité GDPR - supprime tous les peblobs associés à un utilisateur'
+  @ApiOperation({
+    summary: "Supprimer tous les peblobs d'un utilisateur",
+    description:
+      'Utile pour la conformité GDPR - supprime tous les peblobs associés à un utilisateur',
   })
-  @ApiParam({ name: 'userId', description: 'ID de l\'utilisateur' })
+  @ApiParam({ name: 'userId', description: "ID de l'utilisateur" })
   @ApiResponse({
     status: 200,
     description: 'Nombre de peblobs supprimés',
     schema: {
       type: 'object',
       properties: {
-        deletedCount: { type: 'number', example: 5 }
-      }
-    }
+        deletedCount: { type: 'number', example: 5 },
+      },
+    },
   })
   removeAllByUserId(@Param('userId') userId: string): { deletedCount: number } {
     const deletedCount = this.peblobService.removeAllByUserId(userId);

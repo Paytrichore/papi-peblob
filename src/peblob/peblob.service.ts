@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreatePeblobDto } from './dto/create-peblob.dto';
 import { UpdatePeblobDto, PeblobStatus } from './dto/update-peblob.dto';
 import { PeblobEntity } from './entities/peblob.entity';
@@ -14,8 +18,8 @@ export class PeblobService {
     this.validateSquareStructure(createPeblobDto.structure);
 
     // Conversion du DTO vers des entités Ptiblob
-    const structure = createPeblobDto.structure.map(row =>
-      row.map(ptiblob => new PtiblobEntity(ptiblob.r, ptiblob.g, ptiblob.b))
+    const structure = createPeblobDto.structure.map((row) =>
+      row.map((ptiblob) => new PtiblobEntity(ptiblob.r, ptiblob.g, ptiblob.b)),
     );
 
     const newPeblob = new PeblobEntity({
@@ -40,11 +44,13 @@ export class PeblobService {
     for (let i = 0; i < size; i++) {
       const row: PtiblobEntity[] = [];
       for (let j = 0; j < size; j++) {
-        row.push(new PtiblobEntity(
-          Math.floor(Math.random() * 256),
-          Math.floor(Math.random() * 256),
-          Math.floor(Math.random() * 256)
-        ));
+        row.push(
+          new PtiblobEntity(
+            Math.floor(Math.random() * 256),
+            Math.floor(Math.random() * 256),
+            Math.floor(Math.random() * 256),
+          ),
+        );
       }
       structure.push(row);
     }
@@ -70,7 +76,9 @@ export class PeblobService {
     const size = structure.length;
     for (let i = 0; i < structure.length; i++) {
       if (!structure[i] || structure[i].length !== size) {
-        throw new BadRequestException(`La structure doit être carrée. Ligne ${i} a ${structure[i]?.length || 0} éléments, attendu ${size}`);
+        throw new BadRequestException(
+          `La structure doit être carrée. Ligne ${i} a ${structure[i]?.length || 0} éléments, attendu ${size}`,
+        );
       }
     }
   }
@@ -80,7 +88,7 @@ export class PeblobService {
   }
 
   findOne(id: string): PeblobEntity {
-    const peblob = this.peblobs.find(p => p.id === id);
+    const peblob = this.peblobs.find((p) => p.id === id);
     if (!peblob) {
       throw new NotFoundException(`Peblob avec l'ID ${id} non trouvé`);
     }
@@ -88,22 +96,24 @@ export class PeblobService {
   }
 
   update(id: string, updatePeblobDto: UpdatePeblobDto): PeblobEntity {
-    const peblobIndex = this.peblobs.findIndex(p => p.id === id);
+    const peblobIndex = this.peblobs.findIndex((p) => p.id === id);
     if (peblobIndex === -1) {
       throw new NotFoundException(`Peblob avec l'ID ${id} non trouvé`);
     }
 
     const existingPeblob = this.peblobs[peblobIndex];
-    
+
     // Si on met à jour la structure, valider qu'elle est carrée
     if (updatePeblobDto.structure) {
       this.validateSquareStructure(updatePeblobDto.structure);
-      
+
       // Convertir vers des entités Ptiblob
-      const newStructure = updatePeblobDto.structure.map(row =>
-        row.map(ptiblob => new PtiblobEntity(ptiblob.r, ptiblob.g, ptiblob.b))
+      const newStructure = updatePeblobDto.structure.map((row) =>
+        row.map(
+          (ptiblob) => new PtiblobEntity(ptiblob.r, ptiblob.g, ptiblob.b),
+        ),
       );
-      
+
       existingPeblob.structure = newStructure;
     }
 
@@ -116,12 +126,12 @@ export class PeblobService {
     }
 
     existingPeblob.updatedAt = new Date();
-    
+
     return existingPeblob;
   }
 
   remove(id: string): void {
-    const peblobIndex = this.peblobs.findIndex(p => p.id === id);
+    const peblobIndex = this.peblobs.findIndex((p) => p.id === id);
     if (peblobIndex === -1) {
       throw new NotFoundException(`Peblob avec l'ID ${id} non trouvé`);
     }
@@ -129,11 +139,22 @@ export class PeblobService {
     this.peblobs.splice(peblobIndex, 1);
   }
 
-  getStats(): { total: number; active: number; inactive: number; archived: number } {
+  getStats(): {
+    total: number;
+    active: number;
+    inactive: number;
+    archived: number;
+  } {
     const total = this.peblobs.length;
-    const active = this.peblobs.filter(p => p.status === PeblobStatus.ACTIVE).length;
-    const inactive = this.peblobs.filter(p => p.status === PeblobStatus.INACTIVE).length;
-    const archived = this.peblobs.filter(p => p.status === PeblobStatus.ARCHIVED).length;
+    const active = this.peblobs.filter(
+      (p) => p.status === PeblobStatus.ACTIVE,
+    ).length;
+    const inactive = this.peblobs.filter(
+      (p) => p.status === PeblobStatus.INACTIVE,
+    ).length;
+    const archived = this.peblobs.filter(
+      (p) => p.status === PeblobStatus.ARCHIVED,
+    ).length;
 
     return { total, active, inactive, archived };
   }
@@ -141,7 +162,9 @@ export class PeblobService {
   // Méthode pour obtenir la couleur dominante d'un Peblob
   getDominantColor(id: string): { r: number; g: number; b: number } {
     const peblob = this.findOne(id);
-    let totalR = 0, totalG = 0, totalB = 0;
+    let totalR = 0,
+      totalG = 0,
+      totalB = 0;
     let count = 0;
 
     for (const row of peblob.structure) {
@@ -156,29 +179,41 @@ export class PeblobService {
     return {
       r: Math.round(totalR / count),
       g: Math.round(totalG / count),
-      b: Math.round(totalB / count)
+      b: Math.round(totalB / count),
     };
   }
 
   // Filtrer les peblobs par taille
   findBySize(size: number): PeblobEntity[] {
-    return this.peblobs.filter(peblob => peblob.size === size);
+    return this.peblobs.filter((peblob) => peblob.size === size);
   }
 
   // Filtrer les peblobs par luminosité moyenne
-  findByBrightness(minBrightness: number = 0, maxBrightness: number = 255): PeblobEntity[] {
-    return this.peblobs.filter(peblob => {
+  findByBrightness(
+    minBrightness: number = 0,
+    maxBrightness: number = 255,
+  ): PeblobEntity[] {
+    return this.peblobs.filter((peblob) => {
       const brightness = peblob.getAverageBrightness();
       return brightness >= minBrightness && brightness <= maxBrightness;
     });
   }
 
   // Mettre à jour un Ptiblob spécifique dans un Peblob
-  updatePtiblob(peblobId: string, row: number, col: number, r: number, g: number, b: number): PeblobEntity {
+  updatePtiblob(
+    peblobId: string,
+    row: number,
+    col: number,
+    r: number,
+    g: number,
+    b: number,
+  ): PeblobEntity {
     const peblob = this.findOne(peblobId);
-    
+
     if (!peblob.setPtiblob(row, col, new PtiblobEntity(r, g, b))) {
-      throw new BadRequestException(`Position invalide: row=${row}, col=${col} pour un peblob de taille ${peblob.size}`);
+      throw new BadRequestException(
+        `Position invalide: row=${row}, col=${col} pour un peblob de taille ${peblob.size}`,
+      );
     }
 
     return peblob;
@@ -188,28 +223,44 @@ export class PeblobService {
 
   // Récupérer tous les peblobs d'un utilisateur
   findByUserId(userId: string): PeblobEntity[] {
-    return this.peblobs.filter(peblob => peblob.userId === userId);
+    return this.peblobs.filter((peblob) => peblob.userId === userId);
   }
 
   // Récupérer les statistiques d'un utilisateur
-  getUserStats(userId: string): { 
-    total: number; 
-    active: number; 
-    inactive: number; 
+  getUserStats(userId: string): {
+    total: number;
+    active: number;
+    inactive: number;
     archived: number;
     averageSize: number;
     totalPixels: number;
   } {
     const userPeblobs = this.findByUserId(userId);
     const total = userPeblobs.length;
-    const active = userPeblobs.filter(p => p.status === PeblobStatus.ACTIVE).length;
-    const inactive = userPeblobs.filter(p => p.status === PeblobStatus.INACTIVE).length;
-    const archived = userPeblobs.filter(p => p.status === PeblobStatus.ARCHIVED).length;
-    
-    const totalPixels = userPeblobs.reduce((sum, peblob) => sum + (peblob.size * peblob.size), 0);
+    const active = userPeblobs.filter(
+      (p) => p.status === PeblobStatus.ACTIVE,
+    ).length;
+    const inactive = userPeblobs.filter(
+      (p) => p.status === PeblobStatus.INACTIVE,
+    ).length;
+    const archived = userPeblobs.filter(
+      (p) => p.status === PeblobStatus.ARCHIVED,
+    ).length;
+
+    const totalPixels = userPeblobs.reduce(
+      (sum, peblob) => sum + peblob.size * peblob.size,
+      0,
+    );
     const averageSize = total > 0 ? totalPixels / total : 0;
 
-    return { total, active, inactive, archived, averageSize: Math.round(averageSize), totalPixels };
+    return {
+      total,
+      active,
+      inactive,
+      archived,
+      averageSize: Math.round(averageSize),
+      totalPixels,
+    };
   }
 
   // Transférer un peblob à un autre utilisateur
@@ -222,13 +273,13 @@ export class PeblobService {
 
   // Récupérer les peblobs publics (sans utilisateur assigné)
   findPublicPeblobs(): PeblobEntity[] {
-    return this.peblobs.filter(peblob => !peblob.userId);
+    return this.peblobs.filter((peblob) => !peblob.userId);
   }
 
   // Supprimer tous les peblobs d'un utilisateur (pour GDPR par exemple)
   removeAllByUserId(userId: string): number {
     const initialLength = this.peblobs.length;
-    this.peblobs = this.peblobs.filter(peblob => peblob.userId !== userId);
+    this.peblobs = this.peblobs.filter((peblob) => peblob.userId !== userId);
     return initialLength - this.peblobs.length;
   }
 }

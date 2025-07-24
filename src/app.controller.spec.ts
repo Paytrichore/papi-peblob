@@ -16,7 +16,9 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return welcome message', () => {
-      expect(appController.getHello()).toBe('Bienvenue sur l\'API Papi Peblob! 🚀');
+      expect(appController.getHello()).toBe(
+        "Bienvenue sur l'API Papi Peblob! 🚀",
+      );
     });
   });
 

@@ -15,8 +15,8 @@ export class AppController {
   }
 
   @Get('health')
-  @ApiOperation({ summary: 'Vérification de santé de l\'API' })
-  @ApiResponse({ status: 200, description: 'L\'API fonctionne correctement' })
+  @ApiOperation({ summary: "Vérification de santé de l'API" })
+  @ApiResponse({ status: 200, description: "L'API fonctionne correctement" })
   getHealth(): { status: string; timestamp: string } {
     return {
       status: 'ok',
