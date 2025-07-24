@@ -49,13 +49,6 @@ export class PtiblobEntity {
   }
 
   /**
-   * Calcule la luminosité du Ptiblob
-   */
-  getBrightness(): number {
-    return (this.r + this.g + this.b) / 3;
-  }
-
-  /**
    * Clone le Ptiblob
    */
   clone(): PtiblobEntity {

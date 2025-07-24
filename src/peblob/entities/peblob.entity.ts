@@ -10,12 +10,6 @@ export class PeblobEntity {
   id: string;
 
   @ApiProperty({
-    description: 'Nom du peblob',
-    example: 'Mon Premier Peblob',
-  })
-  name: string;
-
-  @ApiProperty({
     description:
       "ID de l'utilisateur propriétaire (référence vers le microservice User)",
     example: 'user_123e4567-e89b-12d3-a456-426614174000',
@@ -62,13 +56,6 @@ export class PeblobEntity {
     example: 3,
   })
   size: number;
-
-  @ApiProperty({
-    description: 'Statut du peblob',
-    example: 'active',
-    enum: PeblobStatus,
-  })
-  status: PeblobStatus;
 
   @ApiProperty({
     description: 'Date de création',
@@ -123,25 +110,6 @@ export class PeblobEntity {
     this.structure[row][col] = ptiblob;
     this.updatedAt = new Date();
     return true;
-  }
-
-  /**
-   * Calcule la luminosité moyenne du Peblob
-   */
-  getAverageBrightness(): number {
-    if (!this.structure) return 0;
-
-    let totalBrightness = 0;
-    let count = 0;
-
-    for (const row of this.structure) {
-      for (const ptiblob of row) {
-        totalBrightness += ptiblob.getBrightness();
-        count++;
-      }
-    }
-
-    return count > 0 ? totalBrightness / count : 0;
   }
 
   /**

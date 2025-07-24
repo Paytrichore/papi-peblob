@@ -18,33 +18,30 @@ import {
   ApiParam,
   ApiBody,
   ApiQuery,
+  ApiExtraModels,
 } from '@nestjs/swagger';
 import { PeblobService } from './peblob.service';
 import { CreatePeblobDto } from './dto/create-peblob.dto';
 import { UpdatePeblobDto } from './dto/update-peblob.dto';
 import { PeblobEntity } from './entities/peblob.entity';
+import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
+import { PtiblobDto } from './dto/create-ptiblob.dto';
+import { Peblob } from './schemas/peblob.schema';
 
-@ApiTags('peblobs')
-@Controller('peblobs')
+@ApiTags('peblob')
+@ApiExtraModels(PtiblobDto)
+@Controller('peblob')
 export class PeblobController {
   constructor(private readonly peblobService: PeblobService) {}
 
   @Post()
   @ApiOperation({
-    summary: 'Créer un nouveau peblob avec une structure carrée de ptiblobs',
+    summary: 'Créer un peblob pour un utilisateur donné avec une structure carrée de ptiblobs',
   })
-  @ApiBody({ type: CreatePeblobDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Le peblob a été créé avec succès',
-    type: PeblobEntity,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Structure invalide (doit être carrée)',
-  })
-  create(@Body() createPeblobDto: CreatePeblobDto) {
-    return this.peblobService.create(createPeblobDto);
+  @ApiBody({ type: CreatePeblobForUserDto })
+  @ApiResponse({ status: 201, description: 'Peblob créé', type: PeblobEntity })
+  async create(@Body() createPeblobForUserDto: CreatePeblobForUserDto): Promise<Peblob> {
+    return this.peblobService.create(createPeblobForUserDto);
   }
 
   @Post('random')
@@ -107,32 +104,6 @@ export class PeblobController {
     return this.peblobService.findBySize(size);
   }
 
-  @Get('brightness')
-  @ApiOperation({ summary: 'Récupérer les peblobs par luminosité' })
-  @ApiQuery({
-    name: 'min',
-    description: 'Luminosité minimale (0-255)',
-    example: 0,
-    required: false,
-  })
-  @ApiQuery({
-    name: 'max',
-    description: 'Luminosité maximale (0-255)',
-    example: 255,
-    required: false,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Liste des peblobs dans la plage de luminosité',
-    type: [PeblobEntity],
-  })
-  findByBrightness(
-    @Query('min', new ParseIntPipe({ optional: true })) min?: number,
-    @Query('max', new ParseIntPipe({ optional: true })) max?: number,
-  ): PeblobEntity[] {
-    return this.peblobService.findByBrightness(min, max);
-  }
-
   @Get(':id')
   @ApiOperation({ summary: 'Récupérer un peblob par son ID' })
   @ApiParam({ name: 'id', description: 'ID du peblob' })
@@ -144,30 +115,6 @@ export class PeblobController {
   @ApiResponse({ status: 404, description: 'Peblob non trouvé' })
   findOne(@Param('id') id: string) {
     return this.peblobService.findOne(id);
-  }
-
-  @Get(':id/dominant-color')
-  @ApiOperation({ summary: "Récupérer la couleur dominante d'un peblob" })
-  @ApiParam({ name: 'id', description: 'ID du peblob' })
-  @ApiResponse({
-    status: 200,
-    description: 'Couleur dominante du peblob',
-    schema: {
-      type: 'object',
-      properties: {
-        r: { type: 'number', example: 128 },
-        g: { type: 'number', example: 64 },
-        b: { type: 'number', example: 32 },
-      },
-    },
-  })
-  @ApiResponse({ status: 404, description: 'Peblob non trouvé' })
-  getDominantColor(@Param('id') id: string): {
-    r: number;
-    g: number;
-    b: number;
-  } {
-    return this.peblobService.getDominantColor(id);
   }
 
   @Patch(':id')

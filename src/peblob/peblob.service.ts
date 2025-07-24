@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { CreatePeblobDto } from './dto/create-peblob.dto';
+import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
 import { UpdatePeblobDto, PeblobStatus } from './dto/update-peblob.dto';
 import { PeblobEntity } from './entities/peblob.entity';
 import { PtiblobEntity } from './entities/ptiblob.entity';
@@ -21,26 +22,16 @@ export class PeblobService {
     private readonly peblobModel: Model<PeblobDocument>,
   ) {}
 
-  create(createPeblobDto: CreatePeblobDto): PeblobEntity {
-    // Validation que la structure est carrée
-    this.validateSquareStructure(createPeblobDto.structure);
-
-    // Conversion du DTO vers des entités Ptiblob
-    const structure = createPeblobDto.structure.map((row) =>
-      row.map((ptiblob) => new PtiblobEntity(ptiblob.r, ptiblob.g, ptiblob.b)),
-    );
-
-    const newPeblob = new PeblobEntity({
-      id: uuidv4(),
-      name: createPeblobDto.name,
-      structure,
-      status: PeblobStatus.ACTIVE,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  async create(CreatePeblobForUserDto: CreatePeblobForUserDto): Promise<Peblob> {
+    if (!CreatePeblobForUserDto.structure) {
+      throw new BadRequestException('Le champ structure est obligatoire');
+    }
+    this.validateSquareStructure(CreatePeblobForUserDto.structure);
+    const created = new this.peblobModel({
+      userId: CreatePeblobForUserDto.userId,
+      structure: CreatePeblobForUserDto.structure,
     });
-
-    this.peblobs.push(newPeblob);
-    return newPeblob;
+    return created.save();
   }
 
   async createRandom(name: string, size: number = 3): Promise<Peblob> {
@@ -123,22 +114,10 @@ export class PeblobService {
 
   getStats(): {
     total: number;
-    active: number;
-    inactive: number;
-    archived: number;
   } {
     const total = this.peblobs.length;
-    const active = this.peblobs.filter(
-      (p) => p.status === PeblobStatus.ACTIVE,
-    ).length;
-    const inactive = this.peblobs.filter(
-      (p) => p.status === PeblobStatus.INACTIVE,
-    ).length;
-    const archived = this.peblobs.filter(
-      (p) => p.status === PeblobStatus.ARCHIVED,
-    ).length;
 
-    return { total, active, inactive, archived };
+    return { total };
   }
 
   // Méthode pour obtenir la couleur dominante d'un Peblob
@@ -168,17 +147,6 @@ export class PeblobService {
   // Filtrer les peblobs par taille
   findBySize(size: number): PeblobEntity[] {
     return this.peblobs.filter((peblob) => peblob.size === size);
-  }
-
-  // Filtrer les peblobs par luminosité moyenne
-  findByBrightness(
-    minBrightness: number = 0,
-    maxBrightness: number = 255,
-  ): PeblobEntity[] {
-    return this.peblobs.filter((peblob) => {
-      const brightness = peblob.getAverageBrightness();
-      return brightness >= minBrightness && brightness <= maxBrightness;
-    });
   }
 
   // Mettre à jour un Ptiblob spécifique dans un Peblob
@@ -211,23 +179,11 @@ export class PeblobService {
   // Récupérer les statistiques d'un utilisateur
   getUserStats(userId: string): {
     total: number;
-    active: number;
-    inactive: number;
-    archived: number;
     averageSize: number;
     totalPixels: number;
   } {
     const userPeblobs = this.findByUserId(userId);
     const total = userPeblobs.length;
-    const active = userPeblobs.filter(
-      (p) => p.status === PeblobStatus.ACTIVE,
-    ).length;
-    const inactive = userPeblobs.filter(
-      (p) => p.status === PeblobStatus.INACTIVE,
-    ).length;
-    const archived = userPeblobs.filter(
-      (p) => p.status === PeblobStatus.ARCHIVED,
-    ).length;
 
     const totalPixels = userPeblobs.reduce(
       (sum, peblob) => sum + peblob.size * peblob.size,
@@ -237,9 +193,6 @@ export class PeblobService {
 
     return {
       total,
-      active,
-      inactive,
-      archived,
       averageSize: Math.round(averageSize),
       totalPixels,
     };

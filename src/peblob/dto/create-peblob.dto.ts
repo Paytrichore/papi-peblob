@@ -1,8 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
-  IsNotEmpty,
-  MaxLength,
   IsArray,
   ValidateNested,
   IsNumber,
@@ -13,52 +11,9 @@ import {
   IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export class PtiblobDto {
-  @ApiProperty({
-    description: 'Valeur rouge (0-255)',
-    example: 255,
-    minimum: 0,
-    maximum: 255,
-  })
-  @IsNumber()
-  @Min(0)
-  @Max(255)
-  r: number;
-
-  @ApiProperty({
-    description: 'Valeur verte (0-255)',
-    example: 128,
-    minimum: 0,
-    maximum: 255,
-  })
-  @IsNumber()
-  @Min(0)
-  @Max(255)
-  g: number;
-
-  @ApiProperty({
-    description: 'Valeur bleue (0-255)',
-    example: 64,
-    minimum: 0,
-    maximum: 255,
-  })
-  @IsNumber()
-  @Min(0)
-  @Max(255)
-  b: number;
-}
+import { PtiblobDto } from './create-ptiblob.dto';
 
 export class CreatePeblobDto {
-  @ApiProperty({
-    description: 'Nom du peblob',
-    example: 'Mon Premier Peblob',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  name: string;
-
   @ApiProperty({
     description: "ID de l'utilisateur propriétaire (optionnel)",
     example: 'user_123e4567-e89b-12d3-a456-426614174000',
