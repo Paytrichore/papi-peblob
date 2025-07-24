@@ -28,11 +28,11 @@ steps:
     args:
       - '-c'
       - |
-        SERVICE_URL=$(gcloud run services describe papi-peblob --region=us-central1 --format="value(status.url)")
+        SERVICE_URL=$$(gcloud run services describe papi-peblob --region=us-central1 --format="value(status.url)")
         echo "🚀 Service déployé avec succès en PRODUCTION !"
-        echo "📚 URL de l'API: $SERVICE_URL"
-        echo "📖 Documentation Swagger: $SERVICE_URL/api"
-        echo "💚 Health check: $SERVICE_URL/health"
+        echo "📚 URL de l'API: $$SERVICE_URL"
+        echo "📖 Documentation Swagger: $$SERVICE_URL/api"
+        echo "💚 Health check: $$SERVICE_URL/health"
 images:
   - 'gcr.io/$PROJECT_ID/papi-peblob:$COMMIT_SHA'
 options:
