@@ -112,38 +112,6 @@ export class PeblobService {
     return deleted;
   }
 
-  getStats(): {
-    total: number;
-  } {
-    const total = this.peblobs.length;
-
-    return { total };
-  }
-
-  // Méthode pour obtenir la couleur dominante d'un Peblob
-  getDominantColor(id: string): { r: number; g: number; b: number } {
-    const peblob = this.findOne(id);
-    let totalR = 0,
-      totalG = 0,
-      totalB = 0;
-    let count = 0;
-
-    for (const row of peblob.structure) {
-      for (const ptiblob of row) {
-        totalR += ptiblob.r;
-        totalG += ptiblob.g;
-        totalB += ptiblob.b;
-        count++;
-      }
-    }
-
-    return {
-      r: Math.round(totalR / count),
-      g: Math.round(totalG / count),
-      b: Math.round(totalB / count),
-    };
-  }
-
   // Filtrer les peblobs par taille
   findBySize(size: number): PeblobEntity[] {
     return this.peblobs.filter((peblob) => peblob.size === size);
@@ -172,30 +140,8 @@ export class PeblobService {
   // 👥 MÉTHODES POUR LA GESTION DES UTILISATEURS
 
   // Récupérer tous les peblobs d'un utilisateur
-  findByUserId(userId: string): PeblobEntity[] {
-    return this.peblobs.filter((peblob) => peblob.userId === userId);
-  }
-
-  // Récupérer les statistiques d'un utilisateur
-  getUserStats(userId: string): {
-    total: number;
-    averageSize: number;
-    totalPixels: number;
-  } {
-    const userPeblobs = this.findByUserId(userId);
-    const total = userPeblobs.length;
-
-    const totalPixels = userPeblobs.reduce(
-      (sum, peblob) => sum + peblob.size * peblob.size,
-      0,
-    );
-    const averageSize = total > 0 ? totalPixels / total : 0;
-
-    return {
-      total,
-      averageSize: Math.round(averageSize),
-      totalPixels,
-    };
+  findByUserId(userId: string): Promise<Peblob[]> {
+    return this.peblobModel.find({ userId }).exec();
   }
 
   // Transférer un peblob à un autre utilisateur

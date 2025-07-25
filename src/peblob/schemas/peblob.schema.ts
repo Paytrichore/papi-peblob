@@ -5,8 +5,8 @@ export type PeblobDocument = Peblob & Document;
 
 @Schema({ timestamps: true })
 export class Peblob {
-  @Prop({ required: true })
-  userId: string;
+  @Prop()
+  userId?: string;
 
   @Prop({ required: true, type: [[Object]] })
   structure: { r: number; g: number; b: number }[][];

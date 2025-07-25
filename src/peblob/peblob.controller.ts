@@ -84,16 +84,6 @@ export class PeblobController {
     return this.peblobService.findAll();
   }
 
-  @Get('stats')
-  @ApiOperation({ summary: 'Récupérer les statistiques des peblobs' })
-  @ApiResponse({
-    status: 200,
-    description: 'Statistiques des peblobs',
-  })
-  getStats() {
-    return this.peblobService.getStats();
-  }
-
   @Get('size/:size')
   @ApiOperation({ summary: 'Récupérer les peblobs par taille' })
   @ApiParam({ name: 'size', description: 'Taille du carré', example: 3 })
@@ -198,30 +188,8 @@ export class PeblobController {
     description: "Liste des peblobs de l'utilisateur",
     type: [PeblobEntity],
   })
-  findByUserId(@Param('userId') userId: string): PeblobEntity[] {
+  async findByUserId(@Param('userId') userId: string): Promise<Peblob[]> {
     return this.peblobService.findByUserId(userId);
-  }
-
-  @Get('user/:userId/stats')
-  @ApiOperation({ summary: "Récupérer les statistiques d'un utilisateur" })
-  @ApiParam({ name: 'userId', description: "ID de l'utilisateur" })
-  @ApiResponse({
-    status: 200,
-    description: "Statistiques de l'utilisateur",
-    schema: {
-      type: 'object',
-      properties: {
-        total: { type: 'number', example: 10 },
-        active: { type: 'number', example: 8 },
-        inactive: { type: 'number', example: 1 },
-        archived: { type: 'number', example: 1 },
-        averageSize: { type: 'number', example: 12 },
-        totalPixels: { type: 'number', example: 150 },
-      },
-    },
-  })
-  getUserStats(@Param('userId') userId: string) {
-    return this.peblobService.getUserStats(userId);
   }
 
   @Patch(':id/transfer/:newUserId')
