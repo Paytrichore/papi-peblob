@@ -1,6 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { UserService } from './user.service';
 
+type GlobalWithFetch = typeof globalThis & { fetch: typeof fetch };
+
 describe('UserService notifyPeblobDraftCreated', () => {
   const event = {
     eventType: 'peblob-created-from-draft' as const,
@@ -12,6 +14,7 @@ describe('UserService notifyPeblobDraftCreated', () => {
   };
 
   let service: UserService;
+  const globalWithFetch = globalThis as GlobalWithFetch;
 
   const configValues: Record<string, string> = {
     USER_API_URL: 'http://localhost:3001',
@@ -21,46 +24,66 @@ describe('UserService notifyPeblobDraftCreated', () => {
   };
 
   const configService = {
-    get: jest.fn((key: string, fallback?: string) => configValues[key] ?? fallback),
+    get: jest.fn(
+      (key: string, fallback?: string) => configValues[key] ?? fallback,
+    ),
   } as unknown as ConfigService;
 
   beforeEach(() => {
     jest.clearAllMocks();
     service = new UserService(configService);
+    globalWithFetch.fetch = jest.fn<
+      Promise<Response>,
+      [RequestInfo | URL, RequestInit?]
+    >() as unknown as typeof fetch;
   });
 
   it('posts a signed webhook successfully', async () => {
-    (global as any).fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    const response = { ok: true, status: 200 } as Response;
+    (
+      globalWithFetch.fetch as jest.MockedFunction<typeof fetch>
+    ).mockResolvedValue(response);
 
     await service.notifyPeblobDraftCreated(event);
 
-    expect((global as any).fetch).toHaveBeenCalledWith(
+    const fetchMock = globalWithFetch.fetch as unknown as jest.MockedFunction<
+      typeof fetch
+    >;
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
       'http://localhost:3001/webhooks/peblob-draft-created',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'x-webhook-signature': expect.stringMatching(/^sha256=/),
-          'x-webhook-timestamp': expect.any(String),
-        }),
-      }),
+      expect.anything(),
     );
+
+    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(requestInit.method).toBe('POST');
+
+    const headers = requestInit.headers as Record<string, string>;
+    expect(headers['x-webhook-signature']).toMatch(/^sha256=/);
+    expect(headers['x-webhook-timestamp']).toBeTruthy();
   });
 
   it('retries on 5xx and then succeeds', async () => {
-    (global as any).fetch = jest
-      .fn()
-      .mockResolvedValueOnce({ ok: false, status: 503 })
-      .mockResolvedValueOnce({ ok: true, status: 200 });
+    const fetchMock = globalWithFetch.fetch as jest.MockedFunction<
+      typeof fetch
+    >;
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 503 } as Response)
+      .mockResolvedValueOnce({ ok: true, status: 200 } as Response);
 
     await service.notifyPeblobDraftCreated(event);
 
-    expect((global as any).fetch).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('throws after max retries', async () => {
-    (global as any).fetch = jest
-      .fn()
-      .mockResolvedValue({ ok: false, status: 503 });
+    (
+      globalWithFetch.fetch as jest.MockedFunction<typeof fetch>
+    ).mockResolvedValue({
+      ok: false,
+      status: 503,
+    } as Response);
 
     await expect(service.notifyPeblobDraftCreated(event)).rejects.toThrow(
       'Webhook failed with status 503 after 3 attempt(s)',

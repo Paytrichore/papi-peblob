@@ -45,7 +45,9 @@ export class UserService {
     );
   }
 
-  async notifyPeblobDraftCreated(event: PeblobDraftCreatedEvent): Promise<void> {
+  async notifyPeblobDraftCreated(
+    event: PeblobDraftCreatedEvent,
+  ): Promise<void> {
     if (!this.webhookSecret) {
       throw new Error('WEBHOOK_SHARED_SECRET is not configured');
     }
