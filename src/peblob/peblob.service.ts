@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ServiceUnavailableException,
+  Logger,
 } from '@nestjs/common';
 import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
 import { UpdatePeblobDto } from './dto/update-peblob.dto';
@@ -16,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class PeblobService {
+  private readonly logger = new Logger(PeblobService.name);
   private peblobs: PeblobEntity[] = [];
 
   constructor(
@@ -46,9 +48,29 @@ export class PeblobService {
         peblobId: String(savedPeblob._id),
         correlationId: uuidv4(),
       });
-    } catch {
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Webhook sync failed for peblob ${savedPeblob._id}: ${reason}`,
+      );
+
+      try {
+        await this.peblobModel.findByIdAndDelete(savedPeblob._id).exec();
+      } catch (rollbackError) {
+        const rollbackReason =
+          rollbackError instanceof Error
+            ? rollbackError.message
+            : 'Unknown rollback error';
+        this.logger.error(
+          `Rollback failed for peblob ${savedPeblob._id}: ${rollbackReason}`,
+        );
+        throw new ServiceUnavailableException(
+          `Synchronisation utilisateur indisponible et rollback échoué (${reason})`,
+        );
+      }
+
       throw new ServiceUnavailableException(
-        'Peblob créé mais synchronisation utilisateur indisponible',
+        `Création annulée: synchronisation utilisateur indisponible (${reason})`,
       );
     }
 

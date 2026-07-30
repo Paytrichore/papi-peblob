@@ -18,9 +18,16 @@ describe('PeblobService', () => {
     structure: [[{ r: 1, g: 1, b: 1 }]],
   };
 
-  const mockPeblobModel = jest.fn().mockImplementation(() => ({
-    save: jest.fn().mockResolvedValue(savedDoc),
-  }));
+  const mockPeblobModel = Object.assign(
+    jest.fn().mockImplementation(() => ({
+      save: jest.fn().mockResolvedValue(savedDoc),
+    })),
+    {
+      findByIdAndDelete: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(savedDoc),
+      }),
+    },
+  );
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -69,5 +76,9 @@ describe('PeblobService', () => {
         structure: [[{ r: 1, g: 1, b: 1 }]],
       }),
     ).rejects.toThrow(ServiceUnavailableException);
+
+    expect(mockPeblobModel.findByIdAndDelete).toHaveBeenCalledWith(
+      savedDoc._id,
+    );
   });
 });
