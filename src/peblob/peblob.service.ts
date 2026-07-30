@@ -38,6 +38,7 @@ export class PeblobService {
       structure: CreatePeblobForUserDto.structure,
     });
     const savedPeblob = await created.save();
+    const savedPeblobId = String(savedPeblob._id);
 
     try {
       await this.userService.notifyPeblobDraftCreated({
@@ -45,24 +46,24 @@ export class PeblobService {
         eventId: uuidv4(),
         occurredAt: new Date().toISOString(),
         userId: CreatePeblobForUserDto.userId,
-        peblobId: String(savedPeblob._id),
+        peblobId: savedPeblobId,
         correlationId: uuidv4(),
       });
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Webhook sync failed for peblob ${savedPeblob._id}: ${reason}`,
+        `Webhook sync failed for peblob ${savedPeblobId}: ${reason}`,
       );
 
       try {
-        await this.peblobModel.findByIdAndDelete(savedPeblob._id).exec();
+        await this.peblobModel.findByIdAndDelete(savedPeblobId).exec();
       } catch (rollbackError) {
         const rollbackReason =
           rollbackError instanceof Error
             ? rollbackError.message
             : 'Unknown rollback error';
         this.logger.error(
-          `Rollback failed for peblob ${savedPeblob._id}: ${rollbackReason}`,
+          `Rollback failed for peblob ${savedPeblobId}: ${rollbackReason}`,
         );
         throw new ServiceUnavailableException(
           `Synchronisation utilisateur indisponible et rollback échoué (${reason})`,
