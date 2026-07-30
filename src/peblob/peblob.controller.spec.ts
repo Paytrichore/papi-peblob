@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PeblobController } from './peblob.controller';
 import { PeblobService } from './peblob.service';
 import { getModelToken } from '@nestjs/mongoose';
+import { UserService } from '../user/user.service';
 
 describe('PeblobController', () => {
   let controller: PeblobController;
@@ -14,6 +15,12 @@ describe('PeblobController', () => {
         {
           provide: getModelToken('Peblob'),
           useValue: {}, // mock simple, à adapter si besoin
+        },
+        {
+          provide: UserService,
+          useValue: {
+            notifyPeblobDraftCreated: jest.fn(),
+          },
         },
       ],
     }).compile();

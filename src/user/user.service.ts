@@ -1,5 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHmac } from 'node:crypto';
+
+export interface PeblobDraftCreatedEvent {
+  eventType: 'peblob-created-from-draft';
+  eventId: string;
+  occurredAt: string;
+  userId: string;
+  peblobId: string;
+  correlationId: string;
+}
 
 export interface UserProfile {
   id: string;
@@ -13,6 +23,9 @@ export interface UserProfile {
 export class UserService {
   private readonly logger = new Logger(UserService.name);
   private readonly userApiUrl: string;
+  private readonly webhookSecret: string;
+  private readonly webhookMaxRetries: number;
+  private readonly webhookRetryDelayMs: number;
 
   constructor(private configService: ConfigService) {
     // URL de ton microservice User (via variable d'environnement)
@@ -20,6 +33,70 @@ export class UserService {
       'USER_API_URL',
       'http://localhost:3001',
     );
+    this.webhookSecret = this.configService.get<string>(
+      'WEBHOOK_SHARED_SECRET',
+      '',
+    );
+    this.webhookMaxRetries = Number(
+      this.configService.get<string>('WEBHOOK_MAX_RETRIES', '2'),
+    );
+    this.webhookRetryDelayMs = Number(
+      this.configService.get<string>('WEBHOOK_RETRY_DELAY_MS', '200'),
+    );
+  }
+
+  async notifyPeblobDraftCreated(event: PeblobDraftCreatedEvent): Promise<void> {
+    if (!this.webhookSecret) {
+      throw new Error('WEBHOOK_SHARED_SECRET is not configured');
+    }
+
+    const timestamp = Date.now().toString();
+    const body = JSON.stringify(event);
+    const signature = createHmac('sha256', this.webhookSecret)
+      .update(`${timestamp}.${body}`)
+      .digest('hex');
+
+    let attempt = 0;
+    while (attempt <= this.webhookMaxRetries) {
+      try {
+        const response = await fetch(
+          `${this.userApiUrl}/webhooks/peblob-draft-created`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-webhook-timestamp': timestamp,
+              'x-webhook-signature': `sha256=${signature}`,
+            },
+            body,
+          },
+        );
+
+        if (response.ok) {
+          return;
+        }
+
+        const shouldRetry = response.status >= 500;
+        if (!shouldRetry || attempt === this.webhookMaxRetries) {
+          throw new Error(
+            `Webhook failed with status ${response.status} after ${attempt + 1} attempt(s)`,
+          );
+        }
+      } catch (error) {
+        if (attempt === this.webhookMaxRetries) {
+          throw error;
+        }
+      }
+
+      attempt += 1;
+      await this.delay(this.webhookRetryDelayMs);
+    }
+
+    throw new Error('Webhook failed unexpectedly');
+  }
+
+  private async delay(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
