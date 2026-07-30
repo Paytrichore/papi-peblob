@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
 import { UpdatePeblobDto } from './dto/update-peblob.dto';
@@ -10,6 +11,8 @@ import { PtiblobEntity } from './entities/ptiblob.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Peblob, PeblobDocument } from './schemas/peblob.schema';
+import { UserService } from '../user/user.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class PeblobService {
@@ -18,6 +21,7 @@ export class PeblobService {
   constructor(
     @InjectModel(Peblob.name)
     private readonly peblobModel: Model<PeblobDocument>,
+    private readonly userService: UserService,
   ) {}
 
   async create(
@@ -31,7 +35,24 @@ export class PeblobService {
       userId: CreatePeblobForUserDto.userId,
       structure: CreatePeblobForUserDto.structure,
     });
-    return created.save();
+    const savedPeblob = await created.save();
+
+    try {
+      await this.userService.notifyPeblobDraftCreated({
+        eventType: 'peblob-created-from-draft',
+        eventId: uuidv4(),
+        occurredAt: new Date().toISOString(),
+        userId: CreatePeblobForUserDto.userId,
+        peblobId: String(savedPeblob._id),
+        correlationId: uuidv4(),
+      });
+    } catch {
+      throw new ServiceUnavailableException(
+        'Peblob créé mais synchronisation utilisateur indisponible',
+      );
+    }
+
+    return savedPeblob;
   }
 
   async createRandom(name: string, size: number = 3): Promise<Peblob> {
