@@ -25,6 +25,7 @@ import { UpdatePeblobDto } from './dto/update-peblob.dto';
 import { PeblobEntity } from './entities/peblob.entity';
 import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
 import { PtiblobDto } from './dto/create-ptiblob.dto';
+import { FindPeblobsByIdsDto } from './dto/find-peblobs-by-ids.dto';
 import { Peblob } from './schemas/peblob.schema';
 
 @ApiTags('peblob')
@@ -71,6 +72,18 @@ export class PeblobController {
     @Query('size', new ParseIntPipe({ optional: true })) size?: number,
   ) {
     return this.peblobService.createRandom(name, size);
+  }
+
+  @Post('by-ids')
+  @ApiOperation({ summary: 'Récupérer plusieurs peblobs par leurs IDs' })
+  @ApiBody({ type: FindPeblobsByIdsDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Liste des peblobs trouvés',
+    type: [PeblobEntity],
+  })
+  findByIds(@Body() findPeblobsByIdsDto: FindPeblobsByIdsDto): Promise<Peblob[]> {
+    return this.peblobService.findByIds(findPeblobsByIdsDto.ids);
   }
 
   @Get()
