@@ -1,4 +1,10 @@
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsNotEmpty, IsString } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsNotEmpty,
+  IsString,
+} from 'class-validator';
 
 export const MAX_PEBLOB_IDS_PER_REQUEST = 500;
 

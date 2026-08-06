@@ -82,7 +82,9 @@ export class PeblobController {
     description: 'Liste des peblobs trouvés',
     type: [PeblobEntity],
   })
-  findByIds(@Body() findPeblobsByIdsDto: FindPeblobsByIdsDto): Promise<Peblob[]> {
+  findByIds(
+    @Body() findPeblobsByIdsDto: FindPeblobsByIdsDto,
+  ): Promise<Peblob[]> {
     return this.peblobService.findByIds(findPeblobsByIdsDto.ids);
   }
 
