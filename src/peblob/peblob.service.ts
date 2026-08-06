@@ -123,6 +123,11 @@ export class PeblobService {
     return this.peblobs;
   }
 
+  findByIds(ids: string[]): Promise<Peblob[]> {
+    const uniqueIds = [...new Set(ids)];
+    return this.peblobModel.find({ _id: { $in: uniqueIds } }).exec();
+  }
+
   findOne(id: string): PeblobEntity {
     const peblob = this.peblobs.find((p) => p.id === id);
     if (!peblob) {

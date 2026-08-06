@@ -23,6 +23,11 @@ describe('PeblobService', () => {
       save: jest.fn().mockResolvedValue(savedDoc),
     })),
     {
+      find: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([savedDoc]),
+      }),
+    },
+    {
       findByIdAndDelete: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue(savedDoc),
       }),
@@ -80,5 +85,14 @@ describe('PeblobService', () => {
     expect(mockPeblobModel.findByIdAndDelete).toHaveBeenCalledWith(
       savedDoc._id,
     );
+  });
+
+  it('loads unique peblob IDs with one database query', async () => {
+    const result = await service.findByIds(['peblob-id-1', 'peblob-id-1']);
+
+    expect(mockPeblobModel.find).toHaveBeenCalledWith({
+      _id: { $in: ['peblob-id-1'] },
+    });
+    expect(result).toEqual([savedDoc]);
   });
 });
