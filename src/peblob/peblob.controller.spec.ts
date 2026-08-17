@@ -3,6 +3,7 @@ import { PeblobController } from './peblob.controller';
 import { PeblobService } from './peblob.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { UserService } from '../user/user.service';
+import { WebhookSignatureService } from './webhook-signature.service';
 
 describe('PeblobController', () => {
   let controller: PeblobController;
@@ -21,6 +22,10 @@ describe('PeblobController', () => {
           useValue: {
             notifyPeblobDraftCreated: jest.fn(),
           },
+        },
+        {
+          provide: WebhookSignatureService,
+          useValue: { assertValidSignature: jest.fn() },
         },
       ],
     }).compile();
