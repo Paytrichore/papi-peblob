@@ -14,6 +14,10 @@ import { Model } from 'mongoose';
 import { Peblob, PeblobDocument } from './schemas/peblob.schema';
 import { UserService } from '../user/user.service';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  PlacementCompensationEventDto,
+  PlacementEventDto,
+} from './dto/placement-event.dto';
 
 @Injectable()
 export class PeblobService {
@@ -25,6 +29,61 @@ export class PeblobService {
     private readonly peblobModel: Model<PeblobDocument>,
     private readonly userService: UserService,
   ) {}
+
+  async markPlacedFromEvent(event: PlacementEventDto) {
+    const peblob = await this.peblobModel.findById(event.peblobId).exec();
+    if (!peblob || peblob.userId !== event.userId) {
+      throw new NotFoundException('Peblob introuvable pour cet utilisateur');
+    }
+
+    if (peblob.processedEventIds.includes(event.eventId)) {
+      return { status: 'duplicate', peblob };
+    }
+
+    if (peblob.status === 'ON_MAP') {
+      throw new BadRequestException('Peblob déjà placé sur la carte');
+    }
+
+    const updated = await this.peblobModel
+      .findOneAndUpdate(
+        { _id: event.peblobId, userId: event.userId },
+        {
+          $set: { status: 'ON_MAP', mapPosition: { x: event.x, y: event.y } },
+          $addToSet: { processedEventIds: event.eventId },
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) {
+      throw new NotFoundException('Peblob introuvable pour cet utilisateur');
+    }
+    return { status: 'processed', peblob: updated };
+  }
+
+  async compensatePlacement(event: PlacementCompensationEventDto) {
+    const updated = await this.peblobModel
+      .findOneAndUpdate(
+        {
+          _id: event.peblobId,
+          userId: event.userId,
+          'mapPosition.x': event.x,
+          'mapPosition.y': event.y,
+        },
+        {
+          $set: { status: 'AVAILABLE' },
+          $unset: { mapPosition: 1 },
+          $addToSet: { processedEventIds: event.eventId },
+        },
+        { new: true },
+      )
+      .exec();
+
+    return {
+      status: updated ? 'compensated' : 'already-compensated',
+      peblob: updated,
+    };
+  }
 
   async create(
     CreatePeblobForUserDto: CreatePeblobForUserDto,

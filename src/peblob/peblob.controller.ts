@@ -10,7 +10,10 @@ import {
   HttpStatus,
   Query,
   ParseIntPipe,
+  Headers,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -27,12 +30,54 @@ import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
 import { PtiblobDto } from './dto/create-ptiblob.dto';
 import { FindPeblobsByIdsDto } from './dto/find-peblobs-by-ids.dto';
 import { Peblob } from './schemas/peblob.schema';
+import {
+  PlacementCompensationEventDto,
+  PlacementEventDto,
+} from './dto/placement-event.dto';
+import { WebhookSignatureService } from './webhook-signature.service';
+
+interface RawBodyRequest extends Request {
+  rawBody?: string;
+}
 
 @ApiTags('peblob')
 @ApiExtraModels(PtiblobDto)
 @Controller('peblob')
 export class PeblobController {
-  constructor(private readonly peblobService: PeblobService) {}
+  constructor(
+    private readonly peblobService: PeblobService,
+    private readonly signatureService: WebhookSignatureService,
+  ) {}
+
+  @Post('webhooks/placement')
+  async handlePlacement(
+    @Body() event: PlacementEventDto,
+    @Headers('x-webhook-signature') signature: string | undefined,
+    @Headers('x-webhook-timestamp') timestamp: string | undefined,
+    @Req() request: RawBodyRequest,
+  ) {
+    this.signatureService.assertValidSignature(
+      signature,
+      timestamp,
+      request.rawBody ?? JSON.stringify(event),
+    );
+    return this.peblobService.markPlacedFromEvent(event);
+  }
+
+  @Post('webhooks/placement/compensate')
+  async compensatePlacement(
+    @Body() event: PlacementCompensationEventDto,
+    @Headers('x-webhook-signature') signature: string | undefined,
+    @Headers('x-webhook-timestamp') timestamp: string | undefined,
+    @Req() request: RawBodyRequest,
+  ) {
+    this.signatureService.assertValidSignature(
+      signature,
+      timestamp,
+      request.rawBody ?? JSON.stringify(event),
+    );
+    return this.peblobService.compensatePlacement(event);
+  }
 
   @Post()
   @ApiOperation({

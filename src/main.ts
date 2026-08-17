@@ -3,10 +3,19 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
+import type { Request } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use(
+    bodyParser.json({
+      verify: (req: any, _res, buf) => {
+        const request = req as Request & { rawBody?: string };
+        request.rawBody = buf.toString('utf8');
+      },
+    }),
+  );
   app.use(bodyParser.urlencoded({ extended: true }));
 
   // Configuration globale de la validation
