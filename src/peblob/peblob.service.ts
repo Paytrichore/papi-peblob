@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   ServiceUnavailableException,
   Logger,
 } from '@nestjs/common';
@@ -33,7 +34,10 @@ export class PeblobService {
   async markPlacedFromEvent(event: PlacementEventDto) {
     const peblob = await this.peblobModel.findById(event.peblobId).exec();
     if (!peblob || peblob.userId !== event.userId) {
-      throw new NotFoundException('Peblob introuvable pour cet utilisateur');
+      throw new NotFoundException({
+        code: 'PEBLOB_NOT_FOUND',
+        message: 'Peblob introuvable pour cet utilisateur',
+      });
     }
 
     if (peblob.processedEventIds.includes(event.eventId)) {
@@ -41,7 +45,10 @@ export class PeblobService {
     }
 
     if (peblob.status === 'ON_MAP') {
-      throw new BadRequestException('Peblob déjà placé sur la carte');
+      throw new ConflictException({
+        code: 'PEBLOB_ALREADY_PLACED',
+        message: 'Peblob déjà placé sur la carte',
+      });
     }
 
     const updated = await this.peblobModel
@@ -56,7 +63,10 @@ export class PeblobService {
       .exec();
 
     if (!updated) {
-      throw new NotFoundException('Peblob introuvable pour cet utilisateur');
+      throw new NotFoundException({
+        code: 'PEBLOB_NOT_FOUND',
+        message: 'Peblob introuvable pour cet utilisateur',
+      });
     }
     return { status: 'processed', peblob: updated };
   }
