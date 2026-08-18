@@ -10,6 +10,9 @@ describe('PeblobService', () => {
 
   const mockUserService = {
     notifyPeblobDraftCreated: jest.fn(),
+    getUserProfiles: jest
+      .fn()
+      .mockResolvedValue([{ id: 'user-1', username: 'camille' }]),
   };
 
   const savedDoc = {
@@ -93,6 +96,6 @@ describe('PeblobService', () => {
     expect(mockPeblobModel.find).toHaveBeenCalledWith({
       _id: { $in: ['peblob-id-1'] },
     });
-    expect(result).toEqual([savedDoc]);
+    expect(result).toEqual([{ ...savedDoc, ownerName: 'camille' }]);
   });
 });

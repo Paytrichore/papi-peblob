@@ -129,7 +129,7 @@ export class PeblobController {
   })
   findByIds(
     @Body() findPeblobsByIdsDto: FindPeblobsByIdsDto,
-  ): Promise<Peblob[]> {
+  ): Promise<Array<Peblob & { ownerName?: string }>> {
     return this.peblobService.findByIds(findPeblobsByIdsDto.ids);
   }
 

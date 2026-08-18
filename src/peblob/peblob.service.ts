@@ -182,9 +182,29 @@ export class PeblobService {
     return this.peblobs;
   }
 
-  findByIds(ids: string[]): Promise<Peblob[]> {
+  async findByIds(
+    ids: string[],
+  ): Promise<Array<Peblob & { ownerName?: string }>> {
     const uniqueIds = [...new Set(ids)];
-    return this.peblobModel.find({ _id: { $in: uniqueIds } }).exec();
+    const peblobs = await this.peblobModel
+      .find({ _id: { $in: uniqueIds } })
+      .exec();
+    const userIds = [
+      ...new Set(
+        peblobs
+          .map((peblob) => peblob.userId)
+          .filter((userId): userId is string => !!userId),
+      ),
+    ];
+    const profiles = await this.userService.getUserProfiles(userIds);
+    const ownerNames = new Map(
+      profiles.map((profile) => [profile.id, profile.username]),
+    );
+
+    return peblobs.map((peblob) => ({
+      ...(typeof peblob.toObject === 'function' ? peblob.toObject() : peblob),
+      ownerName: peblob.userId ? ownerNames.get(peblob.userId) : undefined,
+    }));
   }
 
   findOne(id: string): PeblobEntity {

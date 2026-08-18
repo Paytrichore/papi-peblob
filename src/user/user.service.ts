@@ -13,10 +13,7 @@ export interface PeblobDraftCreatedEvent {
 
 export interface UserProfile {
   id: string;
-  email: string;
   username: string;
-  createdAt: string;
-  isActive: boolean;
 }
 
 @Injectable()
@@ -134,10 +131,9 @@ export class UserService {
         typeof data === 'object' &&
         data !== null &&
         'id' in data &&
-        'email' in data &&
+        typeof data.id === 'string' &&
         'username' in data &&
-        'createdAt' in data &&
-        'isActive' in data
+        typeof data.username === 'string'
       ) {
         return data as UserProfile;
       }
