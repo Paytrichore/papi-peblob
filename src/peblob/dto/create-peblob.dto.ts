@@ -6,9 +6,20 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   IsOptional,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PtiblobDto } from './create-ptiblob.dto';
+
+export enum PeblobDominantColor {
+  ORANGE = 'orange',
+  GREEN = 'green',
+  BLUE = 'blue',
+  PURPLE = 'purple',
+  RED = 'red',
+  YELLOW = 'yellow',
+  PINK = 'pink',
+}
 
 export class CreatePeblobDto {
   @ApiProperty({
@@ -19,6 +30,23 @@ export class CreatePeblobDto {
   @IsString()
   @IsOptional()
   userId?: string;
+
+  @ApiProperty({
+    description: 'Couleur dominante fournie par le frontend',
+    enum: PeblobDominantColor,
+    required: false,
+  })
+  @IsEnum(PeblobDominantColor)
+  @IsOptional()
+  dominantColor?: PeblobDominantColor;
+
+  @ApiProperty({
+    description: 'Nom du Peblob',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  name?: string;
 
   @ApiProperty({
     description: 'Matrice carrée de Ptiblobs (minimum 1x1, maximum 50x50)',

@@ -35,6 +35,9 @@ import {
   PlacementEventDto,
 } from './dto/placement-event.dto';
 import { WebhookSignatureService } from './webhook-signature.service';
+import { FindUserPeblobsQueryDto } from './dto/find-user-peblobs-query.dto';
+import { PeblobPageResponseDto } from './dto/peblob-page-response.dto';
+import { PeblobDominantColor } from './dto/create-peblob.dto';
 
 interface RawBodyRequest extends Request {
   rawBody?: string;
@@ -243,13 +246,42 @@ export class PeblobController {
   @Get('user/:userId')
   @ApiOperation({ summary: "Récupérer tous les peblobs d'un utilisateur" })
   @ApiParam({ name: 'userId', description: "ID de l'utilisateur" })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    example: 20,
+    minimum: 1,
+    maximum: 100,
+  })
+  @ApiQuery({
+    name: 'color',
+    required: false,
+    enum: Object.values(PeblobDominantColor),
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['asc', 'desc'],
+    example: 'desc',
+  })
   @ApiResponse({
     status: 200,
-    description: "Liste des peblobs de l'utilisateur",
-    type: [PeblobEntity],
+    description: "Page des peblobs de l'utilisateur",
+    type: PeblobPageResponseDto,
   })
-  async findByUserId(@Param('userId') userId: string): Promise<Peblob[]> {
-    return this.peblobService.findByUserId(userId);
+  async findByUserId(
+    @Param('userId') userId: string,
+    @Query() query: FindUserPeblobsQueryDto,
+  ) {
+    return this.peblobService.findByUserIdPaginated(userId, query);
   }
 
   @Patch(':id/transfer/:newUserId')

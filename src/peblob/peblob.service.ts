@@ -19,6 +19,10 @@ import {
   PlacementCompensationEventDto,
   PlacementEventDto,
 } from './dto/placement-event.dto';
+import {
+  FindUserPeblobsQueryDto,
+  PeblobSortOrder,
+} from './dto/find-user-peblobs-query.dto';
 
 @Injectable()
 export class PeblobService {
@@ -105,6 +109,8 @@ export class PeblobService {
     const created = new this.peblobModel({
       userId: CreatePeblobForUserDto.userId,
       structure: CreatePeblobForUserDto.structure,
+      name: CreatePeblobForUserDto.name?.trim() || undefined,
+      dominantColor: CreatePeblobForUserDto.dominantColor,
     });
     const savedPeblob = await created.save();
     const savedPeblobId = String(savedPeblob._id);
@@ -229,12 +235,15 @@ export class PeblobService {
     if (updatePeblobDto.structure) {
       this.validateSquareStructure(updatePeblobDto.structure);
     }
+    const update = {
+      ...updatePeblobDto,
+      ...(updatePeblobDto.name !== undefined
+        ? { name: updatePeblobDto.name.trim() || undefined }
+        : {}),
+      updatedAt: new Date(),
+    };
     const updated = await this.peblobModel
-      .findByIdAndUpdate(
-        id,
-        { ...updatePeblobDto, updatedAt: new Date() },
-        { new: true },
-      )
+      .findByIdAndUpdate(id, update, { new: true })
       .exec();
     if (!updated) {
       throw new NotFoundException(`Peblob avec l'ID ${id} non trouvé`);
@@ -280,6 +289,32 @@ export class PeblobService {
   // Récupérer tous les peblobs d'un utilisateur
   findByUserId(userId: string): Promise<Peblob[]> {
     return this.peblobModel.find({ userId }).exec();
+  }
+
+  async findByUserIdPaginated(userId: string, query: FindUserPeblobsQueryDto) {
+    const filter = {
+      userId,
+      ...(query.color ? { dominantColor: query.color } : {}),
+    };
+    const skip = (query.page - 1) * query.pageSize;
+    const sortDirection = query.sortOrder === PeblobSortOrder.ASC ? 1 : -1;
+
+    const [items, total] = await Promise.all([
+      this.peblobModel
+        .find(filter)
+        .sort({ createdAt: sortDirection })
+        .skip(skip)
+        .limit(query.pageSize)
+        .exec(),
+      this.peblobModel.countDocuments(filter).exec(),
+    ]);
+
+    return {
+      items,
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
   }
 
   // Transférer un peblob à un autre utilisateur
