@@ -272,6 +272,11 @@ export class PeblobController {
     enum: ['asc', 'desc'],
     example: 'desc',
   })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['AVAILABLE', 'ON_MAP'],
+  })
   @ApiResponse({
     status: 200,
     description: "Page des peblobs de l'utilisateur",

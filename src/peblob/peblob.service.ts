@@ -295,6 +295,7 @@ export class PeblobService {
     const filter = {
       userId,
       ...(query.color ? { dominantColor: query.color } : {}),
+      ...(query.status ? { status: query.status } : {}),
     };
     const skip = (query.page - 1) * query.pageSize;
     const sortDirection = query.sortOrder === PeblobSortOrder.ASC ? 1 : -1;

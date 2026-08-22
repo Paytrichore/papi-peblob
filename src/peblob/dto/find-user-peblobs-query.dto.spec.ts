@@ -3,6 +3,7 @@ import { validate } from 'class-validator';
 import {
   FindUserPeblobsQueryDto,
   PeblobSortOrder,
+  PeblobStatus,
 } from './find-user-peblobs-query.dto';
 import { CreatePeblobDto, PeblobDominantColor } from './create-peblob.dto';
 
@@ -21,11 +22,13 @@ describe('FindUserPeblobsQueryDto', () => {
       pageSize: '50',
       color: PeblobDominantColor.BLUE,
       sortOrder: PeblobSortOrder.ASC,
+      status: PeblobStatus.ON_MAP,
     });
 
     expect(await validate(query)).toEqual([]);
     expect(query.page).toBe(2);
     expect(query.pageSize).toBe(50);
+    expect(query.status).toBe(PeblobStatus.ON_MAP);
   });
 
   it('rejects invalid colors and out-of-range page sizes', async () => {
@@ -34,12 +37,19 @@ describe('FindUserPeblobsQueryDto', () => {
       page: 0,
       pageSize: 101,
       sortOrder: 'random',
+      status: 'INVALID',
     });
 
     const errors = await validate(query);
 
     expect(errors.map((error) => error.property)).toEqual(
-      expect.arrayContaining(['color', 'page', 'pageSize', 'sortOrder']),
+      expect.arrayContaining([
+        'color',
+        'page',
+        'pageSize',
+        'sortOrder',
+        'status',
+      ]),
     );
   });
 

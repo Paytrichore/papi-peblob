@@ -6,6 +6,10 @@ export enum PeblobSortOrder {
   ASC = 'asc',
   DESC = 'desc',
 }
+export enum PeblobStatus {
+  AVAILABLE = 'AVAILABLE',
+  ON_MAP = 'ON_MAP',
+}
 
 export class FindUserPeblobsQueryDto {
   @IsOptional()
@@ -28,4 +32,7 @@ export class FindUserPeblobsQueryDto {
   @IsOptional()
   @IsEnum(PeblobSortOrder)
   sortOrder: PeblobSortOrder = PeblobSortOrder.DESC;
+  @IsOptional()
+  @IsEnum(PeblobStatus)
+  status?: PeblobStatus;
 }
