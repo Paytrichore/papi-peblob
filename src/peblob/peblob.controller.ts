@@ -192,7 +192,7 @@ export class PeblobController {
   }
 
   @Post(':id/stories')
-  @ApiOperation({ summary: 'Appliquer une story à un Peblob et débiter 2 PA' })
+  @ApiOperation({ summary: 'Appliquer une story à un Peblob et débiter 1 PA' })
   @ApiParam({ name: 'id', description: 'ID du Peblob' })
   @ApiBody({ type: ApplyStoryDto })
   @ApiResponse({

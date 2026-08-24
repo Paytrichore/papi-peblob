@@ -255,6 +255,7 @@ export class PeblobService {
   }
 
   async applyStory(id: string, dto: ApplyStoryDto): Promise<Peblob> {
+    const STORY_COST = 1;
     const current = await this.peblobModel.findById(id).exec();
     if (!current) {
       throw new NotFoundException({
@@ -271,14 +272,14 @@ export class PeblobService {
 
     await this.userService.consumeActionPoints(
       current.userId ?? '',
-      2,
+      STORY_COST,
       `${id}:${dto.storyId}`,
     );
     const structure = current.structure.map((row) =>
       row.map((color) => ({
-        r: this.clampRgb(color.r + dto.r),
-        g: this.clampRgb(color.g + dto.g),
-        b: this.clampRgb(color.b + dto.b),
+        r: this.clampRgb(color.r + this.randomizeEffect(dto.r)),
+        g: this.clampRgb(color.g + this.randomizeEffect(dto.g)),
+        b: this.clampRgb(color.b + this.randomizeEffect(dto.b)),
       })),
     );
     const metrics = this.calculateMetrics(structure);
@@ -306,6 +307,15 @@ export class PeblobService {
     return Math.max(0, Math.min(255, value));
   }
 
+  private randomizeEffect(effect: number): number {
+    if (effect === 0) {
+      return 0;
+    }
+
+    const magnitude = Math.floor(Math.random() * Math.abs(effect)) + 1;
+    return effect > 0 ? magnitude : -magnitude;
+  }
+
   private calculateMetrics(structure: { r: number; g: number; b: number }[][]) {
     const colors = structure.flat();
     const maturity =
@@ -328,7 +338,7 @@ export class PeblobService {
                 255,
             0,
           ) / colors.length;
-    const progression = Math.round(maturity * balance * 100);
+    const progression = Math.round(((maturity + balance) / 2) * 100);
     return { maturity, balance, progression };
   }
 
