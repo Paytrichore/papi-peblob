@@ -39,6 +39,7 @@ import { FindUserPeblobsQueryDto } from './dto/find-user-peblobs-query.dto';
 import { PeblobPageResponseDto } from './dto/peblob-page-response.dto';
 import { PeblobDominantColor } from './dto/create-peblob.dto';
 import { ApplyStoryDto } from './dto/apply-story.dto';
+import { PurchasePowerDto } from './dto/purchase-power.dto';
 
 interface RawBodyRequest extends Request {
   rawBody?: string;
@@ -204,6 +205,23 @@ export class PeblobController {
   @ApiResponse({ status: 402, description: 'PA insuffisants' })
   applyStory(@Param('id') id: string, @Body() dto: ApplyStoryDto) {
     return this.peblobService.applyStory(id, dto);
+  }
+
+  @Post(':id/powers')
+  @ApiOperation({ summary: 'Acheter un pouvoir avec un point disponible' })
+  @ApiParam({ name: 'id', description: 'ID du Peblob' })
+  @ApiBody({ type: PurchasePowerDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Pouvoir acheté',
+    type: PeblobEntity,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Pouvoir déjà acheté ou points insuffisants',
+  })
+  purchasePower(@Param('id') id: string, @Body() dto: PurchasePowerDto) {
+    return this.peblobService.purchasePower(id, dto.powerId);
   }
 
   @Patch(':id/ptiblob/:row/:col')

@@ -27,6 +27,12 @@ export class Peblob {
   @Prop({ min: 0, max: 1, default: 0 })
   balance: number;
 
+  @Prop({ min: 0, max: 3, default: 0 })
+  unlockedPowerCount: number;
+
+  @Prop({ type: [String], default: [] })
+  purchasedPowerIds: string[];
+
   @Prop({ type: [String], default: [] })
   playedStoryIds: string[];
   @Prop({ enum: ['AVAILABLE', 'ON_MAP'], default: 'AVAILABLE' })

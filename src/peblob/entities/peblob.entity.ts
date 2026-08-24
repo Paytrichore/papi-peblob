@@ -68,6 +68,19 @@ export class PeblobEntity {
   })
   updatedAt: Date;
 
+  @ApiProperty({
+    description: 'Nombre de points de pouvoir disponibles',
+    example: 1,
+  })
+  unlockedPowerCount?: number;
+
+  @ApiProperty({
+    description: 'Identifiants des pouvoirs déjà achetés',
+    example: ['power-red-1'],
+    required: false,
+  })
+  purchasedPowerIds?: string[];
+
   constructor(partial: Partial<PeblobEntity>) {
     Object.assign(this, partial);
 

@@ -282,7 +282,10 @@ export class PeblobService {
         b: this.clampRgb(color.b + this.randomizeEffect(dto.b)),
       })),
     );
-    const metrics = this.calculateMetrics(structure);
+    const metrics = this.calculateMetrics(
+      structure,
+      current.purchasedPowerIds?.length ?? 0,
+    );
     const updated = await this.peblobModel
       .findOneAndUpdate(
         { _id: id, playedStoryIds: { $ne: dto.storyId } },
@@ -303,6 +306,52 @@ export class PeblobService {
     return updated;
   }
 
+  async purchasePower(id: string, powerId: string): Promise<Peblob> {
+    const current = await this.peblobModel.findById(id).exec();
+    if (!current) {
+      throw new NotFoundException({
+        code: 'PEBLOB_NOT_FOUND',
+        message: 'Peblob introuvable',
+      });
+    }
+    if (current.purchasedPowerIds?.includes(powerId)) {
+      throw new ConflictException({
+        code: 'POWER_ALREADY_PURCHASED',
+        message: 'Pouvoir déjà acheté',
+      });
+    }
+    if ((current.unlockedPowerCount ?? 0) < 1) {
+      throw new ConflictException({
+        code: 'INSUFFICIENT_POWER_POINTS',
+        message: 'Points de pouvoir insuffisants',
+      });
+    }
+
+    const updated = await this.peblobModel
+      .findOneAndUpdate(
+        {
+          _id: id,
+          unlockedPowerCount: { $gte: 1 },
+          purchasedPowerIds: { $ne: powerId },
+        },
+        {
+          $inc: { unlockedPowerCount: -1 },
+          $addToSet: { purchasedPowerIds: powerId },
+          $set: { updatedAt: new Date() },
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) {
+      throw new ConflictException({
+        code: 'POWER_PURCHASE_CONFLICT',
+        message: 'Le pouvoir ne peut pas être acheté',
+      });
+    }
+    return updated;
+  }
+
   private clampRgb(value: number): number {
     return Math.max(0, Math.min(255, value));
   }
@@ -316,7 +365,10 @@ export class PeblobService {
     return effect > 0 ? magnitude : -magnitude;
   }
 
-  private calculateMetrics(structure: { r: number; g: number; b: number }[][]) {
+  private calculateMetrics(
+    structure: { r: number; g: number; b: number }[][],
+    purchasedPowerCount = 0,
+  ) {
     const colors = structure.flat();
     const maturity =
       colors.length === 0
@@ -339,7 +391,13 @@ export class PeblobService {
             0,
           ) / colors.length;
     const progression = Math.round(((maturity + balance) / 2) * 100);
-    return { maturity, balance, progression };
+    const earnedPowerCount =
+      progression >= 76 ? 3 : progression >= 51 ? 2 : progression >= 26 ? 1 : 0;
+    const unlockedPowerCount = Math.max(
+      0,
+      earnedPowerCount - purchasedPowerCount,
+    );
+    return { maturity, balance, progression, unlockedPowerCount };
   }
 
   async remove(id: string) {
