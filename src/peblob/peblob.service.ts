@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { CreatePeblobForUserDto } from './dto/create-peblob-for-user.dto';
+import { PeblobDominantColor } from './dto/create-peblob.dto';
 import { UpdatePeblobDto } from './dto/update-peblob.dto';
 import { PeblobEntity } from './entities/peblob.entity';
 import { PtiblobEntity } from './entities/ptiblob.entity';
@@ -107,11 +108,15 @@ export class PeblobService {
       throw new BadRequestException('Le champ structure est obligatoire');
     }
     this.validateSquareStructure(CreatePeblobForUserDto.structure);
+    const metrics = this.calculateMetrics(CreatePeblobForUserDto.structure);
     const created = new this.peblobModel({
       userId: CreatePeblobForUserDto.userId,
       structure: CreatePeblobForUserDto.structure,
       name: CreatePeblobForUserDto.name?.trim() || undefined,
-      dominantColor: CreatePeblobForUserDto.dominantColor,
+      dominantColor:
+        CreatePeblobForUserDto.dominantColor ??
+        this.calculateDominantColor(CreatePeblobForUserDto.structure),
+      ...metrics,
     });
     const savedPeblob = await created.save();
     const savedPeblobId = String(savedPeblob._id);
@@ -172,10 +177,13 @@ export class PeblobService {
       structure.push(row);
     }
 
+    const metrics = this.calculateMetrics(structure);
     const created = new this.peblobModel({
       name,
       structure,
       status: 'ACTIVE',
+      dominantColor: this.calculateDominantColor(structure),
+      ...metrics,
     });
     return created.save();
   }
@@ -218,8 +226,14 @@ export class PeblobService {
       profiles.map((profile) => [profile.id, profile.username]),
     );
 
-    return peblobs.map((peblob) => ({
-      ...(typeof peblob.toObject === 'function' ? peblob.toObject() : peblob),
+    const migratedPeblobs = await Promise.all(
+      peblobs.map((peblob) => this.ensureMetrics(peblob)),
+    );
+
+    return migratedPeblobs.map((peblob) => ({
+      ...(typeof peblob.toObject === 'function'
+        ? peblob.toObject<Peblob>()
+        : peblob),
       ownerName: peblob.userId ? ownerNames.get(peblob.userId) : undefined,
     }));
   }
@@ -276,11 +290,7 @@ export class PeblobService {
       `${id}:${dto.storyId}`,
     );
     const structure = current.structure.map((row) =>
-      row.map((color) => ({
-        r: this.clampRgb(color.r + this.randomizeEffect(dto.r)),
-        g: this.clampRgb(color.g + this.randomizeEffect(dto.g)),
-        b: this.clampRgb(color.b + this.randomizeEffect(dto.b)),
-      })),
+      row.map((color) => this.applyStoryEffect(color, dto)),
     );
     const metrics = this.calculateMetrics(
       structure,
@@ -362,8 +372,114 @@ export class PeblobService {
       return 0;
     }
 
-    const magnitude = Math.floor(Math.random() * Math.abs(effect)) + 1;
+    const absoluteEffect = Math.abs(effect);
+    const minimumMagnitude = Math.ceil(absoluteEffect * 0.8);
+    const magnitude =
+      minimumMagnitude +
+      Math.floor(Math.random() * (absoluteEffect - minimumMagnitude + 1));
     return effect > 0 ? magnitude : -magnitude;
+  }
+
+  private applyStoryEffect(
+    color: { r: number; g: number; b: number },
+    effect: { r: number; g: number; b: number },
+  ) {
+    const updated = {
+      r: this.clampRgb(color.r + this.randomizeEffect(effect.r)),
+      g: this.clampRgb(color.g + this.randomizeEffect(effect.g)),
+      b: this.clampRgb(color.b + this.randomizeEffect(effect.b)),
+    };
+    const missingTotal =
+      color.r + color.g + color.b - (updated.r + updated.g + updated.b);
+
+    if (missingTotal <= 0) {
+      return updated;
+    }
+
+    for (const channel of ['r', 'g', 'b'] as const) {
+      const available = 255 - updated[channel];
+      const compensation = Math.min(available, missingTotal);
+      updated[channel] += compensation;
+      if (compensation === missingTotal) {
+        break;
+      }
+    }
+
+    return updated;
+  }
+
+  private async ensureMetrics(peblob: PeblobDocument): Promise<PeblobDocument> {
+    if (
+      peblob.maturity !== undefined &&
+      peblob.balance !== undefined &&
+      peblob.earnedPowerCount !== undefined &&
+      peblob.unlockedPowerCount !== undefined &&
+      peblob.dominantColor !== undefined
+    ) {
+      return peblob;
+    }
+
+    const metrics = this.calculateMetrics(
+      peblob.structure,
+      peblob.earnedPowerCount ?? 0,
+      peblob.purchasedPowerIds?.length ?? 0,
+    );
+    Object.assign(peblob, metrics);
+    if (peblob.dominantColor === undefined) {
+      peblob.dominantColor = this.calculateDominantColor(peblob.structure);
+    }
+
+    if (typeof peblob.save === 'function') {
+      await peblob.save();
+    }
+    return peblob;
+  }
+
+  private calculateDominantColor(
+    structure: { r: number; g: number; b: number }[][],
+  ): PeblobDominantColor {
+    const colors = structure.flat();
+    if (!colors.length) {
+      return PeblobDominantColor.GREEN;
+    }
+
+    const average = colors.reduce(
+      (total, color) => ({
+        r: total.r + color.r / colors.length,
+        g: total.g + color.g / colors.length,
+        b: total.b + color.b / colors.length,
+      }),
+      { r: 0, g: 0, b: 0 },
+    );
+    const colorVectors: Record<PeblobDominantColor, [number, number, number]> =
+      {
+        [PeblobDominantColor.ORANGE]: [1, 0.5, 0],
+        [PeblobDominantColor.GREEN]: [0.25, 1, 0.25],
+        [PeblobDominantColor.BLUE]: [0.25, 0.25, 1],
+        [PeblobDominantColor.PURPLE]: [1, 0, 1],
+        [PeblobDominantColor.RED]: [1, 0.25, 0.25],
+        [PeblobDominantColor.YELLOW]: [1, 1, 0],
+        [PeblobDominantColor.PINK]: [1, 0.4, 0.7],
+      };
+    const maximum = Math.max(average.r, average.g, average.b, 1);
+    const normalized = [
+      average.r / maximum,
+      average.g / maximum,
+      average.b / maximum,
+    ];
+
+    return Object.entries(colorVectors).reduce(
+      (closestColor, [color, vector]) => {
+        const distance = vector.reduce(
+          (total, channel, index) => total + (channel - normalized[index]) ** 2,
+          0,
+        );
+        return distance < closestColor.distance
+          ? { color: color as PeblobDominantColor, distance }
+          : closestColor;
+      },
+      { color: PeblobDominantColor.GREEN, distance: Number.POSITIVE_INFINITY },
+    ).color;
   }
 
   private calculateMetrics(
@@ -439,8 +555,9 @@ export class PeblobService {
   // 👥 MÉTHODES POUR LA GESTION DES UTILISATEURS
 
   // Récupérer tous les peblobs d'un utilisateur
-  findByUserId(userId: string): Promise<Peblob[]> {
-    return this.peblobModel.find({ userId }).exec();
+  async findByUserId(userId: string): Promise<Peblob[]> {
+    const peblobs = await this.peblobModel.find({ userId }).exec();
+    return Promise.all(peblobs.map((peblob) => this.ensureMetrics(peblob)));
   }
 
   async findByUserIdPaginated(userId: string, query: FindUserPeblobsQueryDto) {
@@ -462,8 +579,12 @@ export class PeblobService {
       this.peblobModel.countDocuments(filter).exec(),
     ]);
 
+    const migratedItems = await Promise.all(
+      items.map((peblob) => this.ensureMetrics(peblob)),
+    );
+
     return {
-      items,
+      items: migratedItems,
       total,
       page: query.page,
       pageSize: query.pageSize,
