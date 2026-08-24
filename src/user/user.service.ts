@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 export interface PeblobDraftCreatedEvent {
   eventType: 'peblob-created-from-draft';
@@ -103,13 +104,38 @@ export class UserService {
     points: number,
     operationId: string,
   ): Promise<ConsumeActionPointsResponse> {
-    const response = await fetch(`${this.userApiUrl}/users/use-points`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, points, operationId }),
-    });
+    const event = {
+      eventType: 'peblob-story-points-spent',
+      eventId: operationId || randomUUID(),
+      userId,
+      points,
+      peblobId: operationId.split(':')[0] ?? operationId,
+      storyId: operationId.split(':').slice(1).join(':') || operationId,
+    };
+    const timestamp = Date.now().toString();
+    const body = JSON.stringify(event);
+    const signature = createHmac('sha256', this.webhookSecret)
+      .update(`${timestamp}.${body}`)
+      .digest('hex');
 
-    if (response.status === 402 || response.status === 409) {
+    const response = await fetch(
+      `${this.userApiUrl}/webhooks/peblob-story-points`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-webhook-timestamp': timestamp,
+          'x-webhook-signature': `sha256=${signature}`,
+        },
+        body,
+      },
+    );
+
+    if (
+      response.status === 402 ||
+      response.status === 409 ||
+      response.status === 422
+    ) {
       throw new Error('INSUFFICIENT_ACTION_POINTS');
     }
     if (!response.ok) {
