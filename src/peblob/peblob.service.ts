@@ -284,6 +284,7 @@ export class PeblobService {
     );
     const metrics = this.calculateMetrics(
       structure,
+      current.earnedPowerCount ?? 0,
       current.purchasedPowerIds?.length ?? 0,
     );
     const updated = await this.peblobModel
@@ -367,6 +368,7 @@ export class PeblobService {
 
   private calculateMetrics(
     structure: { r: number; g: number; b: number }[][],
+    currentEarnedPowerCount = 0,
     purchasedPowerCount = 0,
   ) {
     const colors = structure.flat();
@@ -390,14 +392,15 @@ export class PeblobService {
                 255,
             0,
           ) / colors.length;
-    const progression = Math.round(((maturity + balance) / 2) * 100);
-    const earnedPowerCount =
-      progression >= 76 ? 3 : progression >= 51 ? 2 : progression >= 26 ? 1 : 0;
+    const earnedPowerCount = Math.max(
+      currentEarnedPowerCount,
+      maturity >= 0.76 ? 3 : maturity >= 0.51 ? 2 : maturity >= 0.26 ? 1 : 0,
+    );
     const unlockedPowerCount = Math.max(
       0,
       earnedPowerCount - purchasedPowerCount,
     );
-    return { maturity, balance, progression, unlockedPowerCount };
+    return { maturity, balance, earnedPowerCount, unlockedPowerCount };
   }
 
   async remove(id: string) {

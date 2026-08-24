@@ -18,14 +18,14 @@ export class Peblob {
   @Prop({ required: true, type: [[Object]] })
   structure: { r: number; g: number; b: number }[][];
 
-  @Prop({ min: 0, max: 100, default: 0 })
-  progression: number;
-
   @Prop({ min: 0, max: 1, default: 0 })
   maturity: number;
 
   @Prop({ min: 0, max: 1, default: 0 })
   balance: number;
+
+  @Prop({ min: 0, max: 3, default: 0 })
+  earnedPowerCount: number;
 
   @Prop({ min: 0, max: 3, default: 0 })
   unlockedPowerCount: number;

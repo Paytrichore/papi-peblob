@@ -75,6 +75,12 @@ export class PeblobEntity {
   unlockedPowerCount?: number;
 
   @ApiProperty({
+    description: 'Nombre total de points de pouvoir gagnés par la maturité',
+    example: 1,
+  })
+  earnedPowerCount?: number;
+
+  @ApiProperty({
     description: 'Identifiants des pouvoirs déjà achetés',
     example: ['power-red-1'],
     required: false,
