@@ -38,6 +38,7 @@ import { WebhookSignatureService } from './webhook-signature.service';
 import { FindUserPeblobsQueryDto } from './dto/find-user-peblobs-query.dto';
 import { PeblobPageResponseDto } from './dto/peblob-page-response.dto';
 import { PeblobDominantColor } from './dto/create-peblob.dto';
+import { ApplyStoryDto } from './dto/apply-story.dto';
 
 interface RawBodyRequest extends Request {
   rawBody?: string;
@@ -188,6 +189,21 @@ export class PeblobController {
     @Body() updatePeblobDto: UpdatePeblobDto,
   ) {
     return this.peblobService.update(id, updatePeblobDto);
+  }
+
+  @Post(':id/stories')
+  @ApiOperation({ summary: 'Appliquer une story à un Peblob et débiter 2 PA' })
+  @ApiParam({ name: 'id', description: 'ID du Peblob' })
+  @ApiBody({ type: ApplyStoryDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Story appliquée',
+    type: PeblobEntity,
+  })
+  @ApiResponse({ status: 409, description: 'Story déjà jouée' })
+  @ApiResponse({ status: 402, description: 'PA insuffisants' })
+  applyStory(@Param('id') id: string, @Body() dto: ApplyStoryDto) {
+    return this.peblobService.applyStory(id, dto);
   }
 
   @Patch(':id/ptiblob/:row/:col')

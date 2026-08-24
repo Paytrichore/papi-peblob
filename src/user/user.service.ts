@@ -16,6 +16,10 @@ export interface UserProfile {
   username: string;
 }
 
+export interface ConsumeActionPointsResponse {
+  actionPoints: number;
+}
+
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
@@ -92,6 +96,38 @@ export class UserService {
     }
 
     throw new Error('Webhook failed unexpectedly');
+  }
+
+  async consumeActionPoints(
+    userId: string,
+    points: number,
+    operationId: string,
+  ): Promise<ConsumeActionPointsResponse> {
+    const response = await fetch(`${this.userApiUrl}/users/use-points`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, points, operationId }),
+    });
+
+    if (response.status === 402 || response.status === 409) {
+      throw new Error('INSUFFICIENT_ACTION_POINTS');
+    }
+    if (!response.ok) {
+      throw new Error(
+        `Action point service failed with status ${response.status}`,
+      );
+    }
+
+    const data: unknown = await response.json();
+    if (
+      typeof data !== 'object' ||
+      data === null ||
+      !('actionPoints' in data) ||
+      typeof data.actionPoints !== 'number'
+    ) {
+      throw new Error('Invalid action point service response');
+    }
+    return data as ConsumeActionPointsResponse;
   }
 
   private async delay(ms: number): Promise<void> {

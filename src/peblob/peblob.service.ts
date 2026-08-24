@@ -23,6 +23,7 @@ import {
   FindUserPeblobsQueryDto,
   PeblobSortOrder,
 } from './dto/find-user-peblobs-query.dto';
+import { ApplyStoryDto } from './dto/apply-story.dto';
 
 @Injectable()
 export class PeblobService {
@@ -235,8 +236,10 @@ export class PeblobService {
     if (updatePeblobDto.structure) {
       this.validateSquareStructure(updatePeblobDto.structure);
     }
+    const { dominantColor: _ignoredDominantColor, ...mutableFields } =
+      updatePeblobDto;
     const update = {
-      ...updatePeblobDto,
+      ...mutableFields,
       ...(updatePeblobDto.name !== undefined
         ? { name: updatePeblobDto.name.trim() || undefined }
         : {}),
@@ -249,6 +252,84 @@ export class PeblobService {
       throw new NotFoundException(`Peblob avec l'ID ${id} non trouvé`);
     }
     return updated;
+  }
+
+  async applyStory(id: string, dto: ApplyStoryDto): Promise<Peblob> {
+    const current = await this.peblobModel.findById(id).exec();
+    if (!current) {
+      throw new NotFoundException({
+        code: 'PEBLOB_NOT_FOUND',
+        message: 'Peblob introuvable',
+      });
+    }
+    if (current.playedStoryIds?.includes(dto.storyId)) {
+      throw new ConflictException({
+        code: 'STORY_ALREADY_PLAYED',
+        message: 'Story déjà jouée',
+      });
+    }
+
+    await this.userService.consumeActionPoints(
+      current.userId ?? '',
+      2,
+      `${id}:${dto.storyId}`,
+    );
+    const structure = current.structure.map((row) =>
+      row.map((color) => ({
+        r: this.clampRgb(color.r + dto.r),
+        g: this.clampRgb(color.g + dto.g),
+        b: this.clampRgb(color.b + dto.b),
+      })),
+    );
+    const metrics = this.calculateMetrics(structure);
+    const updated = await this.peblobModel
+      .findOneAndUpdate(
+        { _id: id, playedStoryIds: { $ne: dto.storyId } },
+        {
+          $set: { structure, ...metrics, updatedAt: new Date() },
+          $addToSet: { playedStoryIds: dto.storyId },
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) {
+      throw new ConflictException({
+        code: 'STORY_ALREADY_PLAYED',
+        message: 'Story déjà jouée',
+      });
+    }
+    return updated;
+  }
+
+  private clampRgb(value: number): number {
+    return Math.max(0, Math.min(255, value));
+  }
+
+  private calculateMetrics(structure: { r: number; g: number; b: number }[][]) {
+    const colors = structure.flat();
+    const maturity =
+      colors.length === 0
+        ? 0
+        : colors.reduce(
+            (total, color) => total + color.r + color.g + color.b,
+            0,
+          ) /
+          (colors.length * 255 * 3);
+    const balance =
+      colors.length === 0
+        ? 0
+        : colors.reduce(
+            (total, color) =>
+              total +
+              1 -
+              (Math.max(color.r, color.g, color.b) -
+                Math.min(color.r, color.g, color.b)) /
+                255,
+            0,
+          ) / colors.length;
+    const progression = Math.round(maturity * balance * 100);
+    return { maturity, balance, progression };
   }
 
   async remove(id: string) {
