@@ -236,8 +236,8 @@ export class PeblobService {
     if (updatePeblobDto.structure) {
       this.validateSquareStructure(updatePeblobDto.structure);
     }
-    const { dominantColor: _ignoredDominantColor, ...mutableFields } =
-      updatePeblobDto;
+    const mutableFields = { ...updatePeblobDto };
+    delete mutableFields.dominantColor;
     const update = {
       ...mutableFields,
       ...(updatePeblobDto.name !== undefined
