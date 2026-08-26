@@ -27,6 +27,7 @@ import {
 import { ApplyStoryDto } from './dto/apply-story.dto';
 import { StartDraftDto } from './dto/start-draft.dto';
 import { SelectDraftDto } from './dto/select-draft.dto';
+import { AnswerDraftDto } from './dto/answer-draft.dto';
 import {
   DraftSession,
   DraftSessionDocument,
@@ -186,19 +187,42 @@ export class PeblobService {
       return existing;
     }
 
+    const session = new this.draftSessionModel({
+      userId: dto.userId,
+      question: dto.question,
+      choices: [],
+      status: DraftStatus.IN_PROGRESS,
+    });
+    const saved = await session.save();
+    return saved;
+  }
+
+  async answerDraft(
+    id: string,
+    dto: AnswerDraftDto,
+  ): Promise<DraftSessionDocument> {
+    const session = await this.draftSessionModel
+      .findOne({ _id: id, status: DraftStatus.IN_PROGRESS })
+      .exec();
+    if (!session) {
+      throw new NotFoundException('Draft introuvable');
+    }
+    if (session.choices.length > 0) {
+      return session;
+    }
+
     const choices = this.shuffle([
       this.generatePeblob(this.resolveTint(dto.color)),
       this.generatePeblob(),
       this.generatePeblob(),
     ]);
-    const session = new this.draftSessionModel({
-      userId: dto.userId,
-      story: { color: dto.color, action: dto.action, result: dto.result },
-      choices,
-      status: DraftStatus.IN_PROGRESS,
-    });
-    const saved = await session.save();
-    return saved;
+    const updated = await this.draftSessionModel
+      .findByIdAndUpdate(id, { $set: { story: dto, choices } }, { new: true })
+      .exec();
+    if (!updated) {
+      throw new NotFoundException('Draft introuvable');
+    }
+    return updated;
   }
 
   getCurrentDraft(userId: string): Promise<DraftSessionDocument | null> {

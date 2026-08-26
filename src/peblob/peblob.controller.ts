@@ -42,6 +42,7 @@ import { ApplyStoryDto } from './dto/apply-story.dto';
 import { PurchasePowerDto } from './dto/purchase-power.dto';
 import { StartDraftDto } from './dto/start-draft.dto';
 import { SelectDraftDto } from './dto/select-draft.dto';
+import { AnswerDraftDto } from './dto/answer-draft.dto';
 
 interface RawBodyRequest extends Request {
   rawBody?: string;
@@ -103,6 +104,12 @@ export class PeblobController {
   @ApiOperation({ summary: 'Démarrer ou reprendre une draft' })
   startDraft(@Body() dto: StartDraftDto) {
     return this.peblobService.startDraft(dto);
+  }
+
+  @Post('drafts/:id/answer')
+  @ApiOperation({ summary: 'Répondre à la question d’une draft' })
+  answerDraft(@Param('id') id: string, @Body() dto: AnswerDraftDto) {
+    return this.peblobService.answerDraft(id, dto);
   }
 
   @Get('drafts/current/:userId')

@@ -10,13 +10,22 @@ type DraftChoice = {
   dominantColor: PeblobDominantColor;
 };
 
+type DraftQuestion = {
+  id?: string;
+  situation: string;
+  choices: { color: string; action: string; result: string }[];
+};
+
 @Schema({ timestamps: true })
 export class DraftSession {
   @Prop({ required: true })
   userId: string;
 
   @Prop({ required: true, type: Object })
-  story: { color: string; action: string; result: string };
+  question: DraftQuestion;
+
+  @Prop({ type: Object })
+  story?: { color: string; action: string; result: string };
 
   @Prop({ required: true, type: [Object], select: true })
   choices: DraftChoice[];
