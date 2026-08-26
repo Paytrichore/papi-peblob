@@ -262,7 +262,7 @@ export class PeblobService {
     }
 
     try {
-      const peblob = await this.savePeblob({
+      const peblob = await this.create({
         userId: session.userId,
         structure: selected.structure,
         dominantColor: selected.dominantColor,
