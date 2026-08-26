@@ -40,6 +40,8 @@ import { PeblobPageResponseDto } from './dto/peblob-page-response.dto';
 import { PeblobDominantColor } from './dto/create-peblob.dto';
 import { ApplyStoryDto } from './dto/apply-story.dto';
 import { PurchasePowerDto } from './dto/purchase-power.dto';
+import { StartDraftDto } from './dto/start-draft.dto';
+import { SelectDraftDto } from './dto/select-draft.dto';
 
 interface RawBodyRequest extends Request {
   rawBody?: string;
@@ -95,6 +97,24 @@ export class PeblobController {
     @Body() createPeblobForUserDto: CreatePeblobForUserDto,
   ): Promise<Peblob> {
     return this.peblobService.create(createPeblobForUserDto);
+  }
+
+  @Post('drafts')
+  @ApiOperation({ summary: 'Démarrer ou reprendre une draft' })
+  startDraft(@Body() dto: StartDraftDto) {
+    return this.peblobService.startDraft(dto);
+  }
+
+  @Get('drafts/current/:userId')
+  @ApiOperation({ summary: 'Récupérer la draft en cours d’un utilisateur' })
+  getCurrentDraft(@Param('userId') userId: string) {
+    return this.peblobService.getCurrentDraft(userId);
+  }
+
+  @Post('drafts/:id/select')
+  @ApiOperation({ summary: 'Sélectionner un Péblob de la draft' })
+  selectDraft(@Param('id') id: string, @Body() dto: SelectDraftDto) {
+    return this.peblobService.selectDraft(id, dto);
   }
 
   @Post('random')

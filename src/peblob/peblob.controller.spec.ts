@@ -18,6 +18,10 @@ describe('PeblobController', () => {
           useValue: {}, // mock simple, à adapter si besoin
         },
         {
+          provide: getModelToken('DraftSession'),
+          useValue: {},
+        },
+        {
           provide: UserService,
           useValue: {
             notifyPeblobDraftCreated: jest.fn(),

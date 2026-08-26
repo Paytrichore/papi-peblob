@@ -94,6 +94,13 @@ describe('PeblobService', () => {
     },
   ) as MockPeblobModel;
 
+  const mockDraftSessionModel = {
+    findOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
+    findByIdAndUpdate: jest.fn(),
+    findByIdAndDelete: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     findQuery.exec.mockResolvedValue([savedDoc]);
@@ -106,6 +113,10 @@ describe('PeblobService', () => {
         {
           provide: getModelToken('Peblob'),
           useValue: mockPeblobModel,
+        },
+        {
+          provide: getModelToken('DraftSession'),
+          useValue: mockDraftSessionModel,
         },
         {
           provide: UserService,

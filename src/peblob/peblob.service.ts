@@ -25,6 +25,13 @@ import {
   PeblobSortOrder,
 } from './dto/find-user-peblobs-query.dto';
 import { ApplyStoryDto } from './dto/apply-story.dto';
+import { StartDraftDto } from './dto/start-draft.dto';
+import { SelectDraftDto } from './dto/select-draft.dto';
+import {
+  DraftSession,
+  DraftSessionDocument,
+} from './schemas/draft-session.schema';
+import { DraftStatus } from './draft-status.enum';
 
 @Injectable()
 export class PeblobService {
@@ -34,6 +41,8 @@ export class PeblobService {
   constructor(
     @InjectModel(Peblob.name)
     private readonly peblobModel: Model<PeblobDocument>,
+    @InjectModel(DraftSession.name)
+    private readonly draftSessionModel: Model<DraftSessionDocument>,
     private readonly userService: UserService,
   ) {}
 
@@ -108,17 +117,7 @@ export class PeblobService {
       throw new BadRequestException('Le champ structure est obligatoire');
     }
     this.validateSquareStructure(CreatePeblobForUserDto.structure);
-    const metrics = this.calculateMetrics(CreatePeblobForUserDto.structure);
-    const created = new this.peblobModel({
-      userId: CreatePeblobForUserDto.userId,
-      structure: CreatePeblobForUserDto.structure,
-      name: CreatePeblobForUserDto.name?.trim() || undefined,
-      dominantColor:
-        CreatePeblobForUserDto.dominantColor ??
-        this.calculateDominantColor(CreatePeblobForUserDto.structure),
-      ...metrics,
-    });
-    const savedPeblob = await created.save();
+    const savedPeblob = await this.savePeblob(CreatePeblobForUserDto);
     const savedPeblobId = String(savedPeblob._id);
 
     try {
@@ -142,7 +141,7 @@ export class PeblobService {
         const rollbackReason =
           rollbackError instanceof Error
             ? rollbackError.message
-            : 'Unknown rollback error';
+            : 'Unknown error';
         this.logger.error(
           `Rollback failed for peblob ${savedPeblobId}: ${rollbackReason}`,
         );
@@ -157,6 +156,216 @@ export class PeblobService {
     }
 
     return savedPeblob;
+  }
+
+  private async savePeblob(
+    createPeblobForUserDto: CreatePeblobForUserDto,
+  ): Promise<PeblobDocument> {
+    if (!createPeblobForUserDto.structure) {
+      throw new BadRequestException('Le champ structure est obligatoire');
+    }
+    this.validateSquareStructure(createPeblobForUserDto.structure);
+    const metrics = this.calculateMetrics(createPeblobForUserDto.structure);
+    const created = new this.peblobModel({
+      userId: createPeblobForUserDto.userId,
+      structure: createPeblobForUserDto.structure,
+      name: createPeblobForUserDto.name?.trim() || undefined,
+      dominantColor:
+        createPeblobForUserDto.dominantColor ??
+        this.calculateDominantColor(createPeblobForUserDto.structure),
+      ...metrics,
+    });
+    return created.save();
+  }
+
+  async startDraft(dto: StartDraftDto): Promise<DraftSessionDocument> {
+    const existing = await this.draftSessionModel
+      .findOne({ userId: dto.userId, status: DraftStatus.IN_PROGRESS })
+      .exec();
+    if (existing) {
+      return existing;
+    }
+
+    const choices = this.shuffle([
+      this.generatePeblob(this.resolveTint(dto.color)),
+      this.generatePeblob(),
+      this.generatePeblob(),
+    ]);
+    const session = new this.draftSessionModel({
+      userId: dto.userId,
+      story: { color: dto.color, action: dto.action, result: dto.result },
+      choices,
+      status: DraftStatus.IN_PROGRESS,
+    });
+    const saved = await session.save();
+    return saved;
+  }
+
+  getCurrentDraft(userId: string): Promise<DraftSessionDocument | null> {
+    return this.draftSessionModel
+      .findOne({ userId, status: DraftStatus.IN_PROGRESS })
+      .exec();
+  }
+
+  async selectDraft(id: string, dto: SelectDraftDto): Promise<Peblob> {
+    const session = await this.draftSessionModel
+      .findOneAndUpdate(
+        { _id: id, status: DraftStatus.IN_PROGRESS },
+        {
+          $set: {
+            status: DraftStatus.COMPLETED,
+            selectedIndex: dto.choiceIndex,
+          },
+        },
+        { new: true },
+      )
+      .exec();
+    if (!session) {
+      throw new ConflictException({
+        code: 'DRAFT_ALREADY_DONE',
+        message: 'Draft déjà complétée',
+      });
+    }
+    const selected = session.choices[dto.choiceIndex];
+    if (!selected) {
+      await this.draftSessionModel
+        .findByIdAndUpdate(id, {
+          $set: { status: DraftStatus.IN_PROGRESS },
+          $unset: { selectedIndex: 1 },
+        })
+        .exec();
+      throw new BadRequestException('Choix de draft invalide');
+    }
+
+    try {
+      const peblob = await this.savePeblob({
+        userId: session.userId,
+        structure: selected.structure,
+        dominantColor: selected.dominantColor,
+      });
+      await this.draftSessionModel
+        .findByIdAndUpdate(id, {
+          $set: { choices: [] },
+        })
+        .exec();
+      return peblob;
+    } catch (error) {
+      await this.draftSessionModel
+        .findByIdAndUpdate(id, {
+          $set: { status: DraftStatus.IN_PROGRESS },
+          $unset: { selectedIndex: 1 },
+        })
+        .exec();
+      throw error;
+    }
+  }
+
+  private generatePeblob(tint?: PeblobDominantColor) {
+    const dominantColor = tint ?? this.randomTint();
+    const rand = (min: number, max: number) =>
+      Math.floor(Math.random() * (max - min + 1)) + min;
+    const structure = [
+      [
+        this.makeColor(dominantColor, rand(20, 40)),
+        this.makeColor(dominantColor, rand(10, 40)),
+        this.makeColor(dominantColor, rand(0, 40)),
+      ],
+      [
+        this.makeColor(dominantColor, rand(10, 40)),
+        this.makeColor(dominantColor, rand(0, 40)),
+        this.makeColor(dominantColor, rand(0, 40)),
+      ],
+      [
+        this.makeColor(dominantColor, rand(10, 40)),
+        this.makeColor(dominantColor, rand(0, 40)),
+        this.makeColor(dominantColor, rand(0, 40)),
+      ],
+    ];
+    return { structure, dominantColor };
+  }
+
+  private randomTint(): PeblobDominantColor {
+    const rand = Math.random();
+    if (rand < 0.75) {
+      const tints = [
+        PeblobDominantColor.YELLOW,
+        PeblobDominantColor.RED,
+        PeblobDominantColor.BLUE,
+      ];
+      return tints[Math.floor(Math.random() * tints.length)];
+    }
+    if (rand < 0.95) {
+      const tints = [
+        PeblobDominantColor.PURPLE,
+        PeblobDominantColor.GREEN,
+        PeblobDominantColor.ORANGE,
+      ];
+      return tints[Math.floor(Math.random() * tints.length)];
+    }
+    return PeblobDominantColor.PINK;
+  }
+
+  private resolveTint(color: string): PeblobDominantColor {
+    const normalized = color.toLowerCase();
+    const aliases: Record<string, PeblobDominantColor> = {
+      orange: PeblobDominantColor.ORANGE,
+      green: PeblobDominantColor.GREEN,
+      blue: PeblobDominantColor.BLUE,
+      purple: PeblobDominantColor.PURPLE,
+      violet: PeblobDominantColor.PURPLE,
+      red: PeblobDominantColor.RED,
+      yellow: PeblobDominantColor.YELLOW,
+      pink: PeblobDominantColor.PINK,
+      rose: PeblobDominantColor.PINK,
+      neutral: PeblobDominantColor.GREEN,
+    };
+    return aliases[normalized] ?? this.randomTint();
+  }
+
+  private shuffle<T>(items: T[]): T[] {
+    for (let index = items.length - 1; index > 0; index--) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+    }
+    return items;
+  }
+
+  private makeColor(tint: PeblobDominantColor, base: number) {
+    const percent = (value: number, min: number, max: number) =>
+      Math.floor(value * (min + Math.random() * (max - min)));
+    const low = () => Math.floor(Math.random() * 6);
+    switch (tint) {
+      case PeblobDominantColor.ORANGE:
+        return { r: base, g: percent(base, 0.3, 0.6), b: low() };
+      case PeblobDominantColor.PURPLE:
+        return { r: base, g: percent(base, 0.2, 0.4), b: base };
+      case PeblobDominantColor.PINK:
+        return {
+          r: base,
+          g: percent(base, 0.2, 0.4),
+          b: percent(base, 0.5, 0.8),
+        };
+      case PeblobDominantColor.YELLOW:
+        return { r: base, g: percent(base, 0.8, 1), b: low() };
+      case PeblobDominantColor.GREEN:
+        return {
+          r: percent(base, 0.2, 0.4),
+          g: base,
+          b: percent(base, 0.2, 0.4),
+        };
+      case PeblobDominantColor.BLUE:
+        return {
+          r: percent(base, 0.2, 0.4),
+          g: percent(base, 0.2, 0.4),
+          b: base,
+        };
+      case PeblobDominantColor.RED:
+        return {
+          r: base,
+          g: percent(base, 0.2, 0.4),
+          b: percent(base, 0.2, 0.4),
+        };
+    }
   }
 
   async createRandom(name: string, size: number = 3): Promise<Peblob> {
